@@ -1,0 +1,158 @@
+Design a mobile app called Kootu — a hyperlocal social shopping marketplace for Indian families. The name means "together" in Tamil, and the app connects families through shared shopping lists while surfacing relevant offers from nearby local vendors and kirana stores.
+
+Brand Personality: Warm, trustworthy, community-first. Feels like a digital extension of a Chennai neighbourhood market — familiar, energetic, but modern and clean. Not corporate. Not cold. Think Swiggy's friendliness meets Google Maps' utility.
+
+Target Users: Indian families in Tier-1/Tier-2 cities. Primary users are homemakers, working adults aged 25–45. Also serves local merchants (kirana shops, vegetable vendors, small retailers).
+
+---
+
+Design System:
+
+Primary Color: #1D9E75 (Teal Green — represents freshness, trust, local produce)
+Accent Color: #E8F5E9 (Soft green tint for backgrounds)
+Secondary Accent: #FF6B35 (Warm orange — offers, alerts, CTAs)
+Surface: #FFFFFF
+Background: #F7F8FA
+Text Primary: #1A1A2E
+Text Secondary: #6B7280
+Success: #22C55E
+Warning: #F59E0B
+Error: #EF4444
+
+Typography:
+- Headings: Nunito (rounded, friendly, readable) — Bold 700
+- Body/UI: Plus Jakarta Sans — Regular 400, Medium 500
+- Numbers/Prices: Tabular numerals
+
+Corner Radius: 12px cards, 8px inputs, 24px pills/chips, 16px bottom sheets
+Spacing: 8pt grid system (8, 16, 24, 32, 48px)
+
+Icon Style: Rounded filled icons (use Phosphor Icons or Heroicons Solid — consistent set throughout)
+
+---
+
+App Structure — 5 Bottom Nav Tabs:
+
+1. Home (house icon)
+2. Rooms (group/family icon)
+3. Offers (tag/percent icon)
+4. Explore (compass/map icon)
+5. Profile (person icon)
+
+---
+
+Screens to Design (MVP — 12 screens):
+
+Screen 01 — Splash / Onboarding (3 slides)
+Illustration-led onboarding. Slide 1: Family adding items to a list together. Slide 2: Nearby vendor offers floating on a map. Slide 3: Saving money as a family. Warm teal gradient background with white card at bottom for CTA. Bold Nunito headline, soft subtext.
+
+Screen 02 — Phone Auth / OTP
+Clean white screen. "+91" flag prefix dropdown. OTP input: 6 large separated boxes (48x56px each). Auto-verify animation (spinner → green checkmark). Below OTP: "Resend in 29s" countdown timer.
+
+Screen 03 — Home Feed
+Top: Greeting ("Good morning, Priya 👋") + location pill ("Velachery, Chennai ▾")
+Below: Horizontal scroll of active Rooms (card format — room name, member avatars, item count, "3 items needed")
+Section: "Offers Near You" — vertical list of offer cards showing merchant name, distance, offer text, items from your list that match (highlighted in teal)
+FAB: Teal + icon to quick-add item.
+
+Screen 04 — Room Detail (Core Screen)
+Header: Room name + member avatar stack + settings icon
+Tabs: "Items" | "History" | "Budget"
+Items Tab: Grouped list with status chips:
+  - [ ] Needed (gray)
+  - [🛒] Being bought — by Priya (amber chip with avatar)
+  - [✓] Bought 2h ago — by Priya (green strikethrough)
+  - [⚠] Due Soon — usually every 7 days (orange pulse dot)
+Each item row: item name, quantity badge, last purchased text, "Claim" button (if status = Needed)
+Bottom: "+ Add Item" bar always visible. Budget progress bar if budget is set.
+
+Screen 05 — Add Item Sheet (Bottom Sheet)
+Voice input button (large, centered mic icon, pulsing ring animation when active)
+Text input field below
+Barcode scanner icon in input right corner
+Smart suggestions below: "Recently added in this room", "Your frequent items"
+Quick-add chips: common Tamil household items (Rice, Dal, Oil, Curd, Eggs...)
+Confirm CTA: Teal button "Add to Room"
+
+Screen 06 — Offers Feed
+Subheader: "Matched to your lists" toggle (on/off)
+Filter chips: Category (Groceries, Vegetables, Dairy, Household), Distance (< 500m, <1km, <2km)
+Offer Card:
+  - Top: Merchant logo (circle avatar) + name + distance
+  - Middle: Offer headline (bold) + items covered + savings amount
+  - Bottom: "Your list match" badge (teal — "2 items match!") + Expiry countdown chip (red — "Ends in 4h 23m")
+  - Geofence banner (if near): "You're 180m away — visit now!"
+
+Screen 07 — Merchant Profile
+Cover image (store photo) + logo avatar overlay
+Shop name, category, rating (stars + review count), distance
+Tabs: Active Offers | Reviews | About
+Active Offers: list of current deal cards
+"Visit Store" CTA button + directions link
+
+Screen 08 — Map / Explore View
+Full-screen map (Google Maps style)
+Floating category filter chips at top (scrollable)
+Custom map pins: teal circle with item count ("3 deals")
+Side drawer peek (30% height bottom sheet) showing nearest stores with deal counts
+FAB: "List View" toggle to switch between map and list
+
+Screen 09 — Room Budget Screen
+Header: Room name + budget period (This Week)
+Large circular progress ring: ₹2,340 / ₹3,500 spent
+Below ring: breakdown by category (Grocery, Dairy, Vegetables) with mini bars
+Transaction history: item, bought by, price, date
+
+Screen 10 — Merchant Dashboard (Separate flow)
+Stats row: Views today | Claimed offers | New customers
+Quick post offer: item name input, discount %, validity, radius slider
+Demand heatmap card: "143 people in 2km have 'Rice' in their list" — "Post an offer →" CTA
+Offer performance list: each active offer with view/claim counts
+
+Screen 11 — Notifications
+Tab: "Offers" | "Room Activity"
+Offer notif: geofence trigger — "You're near FreshMart! They have deals on 3 of your items"
+Room notif: "Mom marked Milk as Bought ✓" / "Priya added Basmati Rice to Family Room"
+Unread: teal left border accent
+
+Screen 12 — Profile
+Avatar + name + "Velachery, Chennai"
+Stats: Rooms joined, Items bought, Money saved (₹ total)
+Sections: My Rooms, Purchase History, Preferences, Language (Tamil/English toggle), Help & Support, Log Out
+
+---
+
+Component Library to Design:
+- Item row (all 4 states: Needed, Being Bought, Bought, Due Soon)
+- Offer card (compact + expanded)
+- Room card (home feed version)
+- Member avatar stack (overlapping circles)
+- Status chip variants
+- Budget ring component
+- Geofence alert banner
+- Bottom nav bar
+- FAB button
+- Input field (text + voice + barcode variants)
+- Merchant card (map + list versions)
+
+---
+
+Interactions & Motion Notes:
+- Item status change: slide-in checkmark animation + subtle haptic
+- Claim item: button morphs from "Claim" to "[Avatar] Buying…" in 300ms
+- Geofence alert: slides in from top, teal accent, auto-dismisses in 5s
+- Offer cards: spring animation on scroll (slight parallax on merchant image)
+- Add item sheet: smooth bottom sheet with spring curve, 350ms
+- OTP verify: boxes fill with spring bounce, spinner → checkmark at 400ms
+
+---
+
+Figma File Structure Suggestion:
+Page 1 — Cover
+Page 2 — Design System (Colors, Typography, Spacing, Icons)
+Page 3 — Components (all reusable components)
+Page 4 — User Flow: Consumer (Splash → Home → Room → Offer)
+Page 5 — User Flow: Merchant (Dashboard → Post Offer)
+Page 6 — Prototype Connections
+
+Use Auto Layout throughout. Design at 390×844 (iPhone 14 base). Create Android variant at 360×800. Use Figma Variables for color tokens so dark mode is a one-click swap.
