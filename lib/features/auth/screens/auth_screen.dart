@@ -20,8 +20,8 @@ class AuthScreen extends ConsumerStatefulWidget {
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _phoneCtrl = TextEditingController();
-  final _otp = List.generate(6, (_) => TextEditingController());
-  final _nodes = List.generate(6, (_) => FocusNode());
+  final _otpCtrl = TextEditingController();
+  final _otpFocus = FocusNode();
 
   _Stage _stage = _Stage.phone;
   String? _verificationId;
@@ -30,14 +30,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    _otpFocus.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
     _phoneCtrl.dispose();
-    for (final c in _otp) {
-      c.dispose();
-    }
-    for (final n in _nodes) {
-      n.dispose();
-    }
+    _otpCtrl.dispose();
+    _otpFocus.dispose();
     _resendTimer?.cancel();
     super.dispose();
   }
@@ -63,7 +65,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               _resend = 29;
             });
             _startResendTimer();
-            _nodes.first.requestFocus();
+            _otpCtrl.clear();
+            WidgetsBinding.instance.addPostFrameCallback(
+                (_) => _otpFocus.requestFocus());
           },
           onError: (e) => setState(() => _error = e.message),
         );
@@ -81,7 +85,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   Future<void> _verify() async {
-    final code = _otp.map((c) => c.text).join();
+    final code = _otpCtrl.text.trim();
     if (code.length != 6 || _verificationId == null) return;
     setState(() => _stage = _Stage.verifying);
     final svc = ref.read(authServiceProvider);
@@ -200,33 +204,44 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         Text('Sent to +91 ${_phoneCtrl.text}',
             style:
                 const TextStyle(color: AppColors.lightTextSecondary)),
-        const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        const SizedBox(height: 32),
+        // Hidden text field captures keyboard input; boxes are display-only.
+        Stack(
           children: [
-            for (var i = 0; i < 6; i++)
-              SizedBox(
-                width: 44,
-                height: 54,
-                child: TextField(
-                  controller: _otp[i],
-                  focusNode: _nodes[i],
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                  maxLength: 1,
-                  style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.w700),
-                  decoration: const InputDecoration(counterText: ''),
-                  onChanged: (v) {
-                    if (v.isNotEmpty && i < 5) {
-                      _nodes[i + 1].requestFocus();
-                    } else if (v.isEmpty && i > 0) {
-                      _nodes[i - 1].requestFocus();
-                    }
-                    if (i == 5 && v.isNotEmpty) _verify();
-                  },
-                ),
+            Opacity(
+              opacity: 0,
+              child: TextField(
+                controller: _otpCtrl,
+                focusNode: _otpFocus,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (v) {
+                  setState(() {});
+                  if (v.length == 6) _verify();
+                },
               ),
+            ),
+            GestureDetector(
+              onTap: _otpFocus.requestFocus,
+              child: ValueListenableBuilder(
+                valueListenable: _otpCtrl,
+                builder: (_, val, __) {
+                  final code = val.text;
+                  final hasFocus = _otpFocus.hasFocus;
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      for (var i = 0; i < 6; i++)
+                        _OtpBox(
+                          digit: i < code.length ? code[i] : null,
+                          isActive: hasFocus && i == code.length.clamp(0, 5),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ],
         ),
         if (_error != null) ...[
@@ -234,7 +249,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           Text(_error!,
               style: const TextStyle(color: AppColors.error, fontSize: 12)),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         Center(
           child: _resend > 0
               ? Text('Resend in ${_resend}s',
@@ -270,6 +285,55 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           const SizedBox(height: 16),
           Text(done ? 'Verified!' : 'Verifying…'),
         ],
+      ),
+    );
+  }
+}
+
+class _OtpBox extends StatelessWidget {
+  const _OtpBox({required this.digit, required this.isActive});
+  final String? digit;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final filled = digit != null;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      width: 46,
+      height: 58,
+      decoration: BoxDecoration(
+        color: filled
+            ? AppColors.primary.withOpacity(0.12)
+            : scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(
+          color: isActive
+              ? AppColors.primary
+              : filled
+                  ? AppColors.primary.withOpacity(0.5)
+                  : scheme.outline,
+          width: isActive ? 2 : 1.5,
+        ),
+      ),
+      child: Center(
+        child: filled
+            ? Text(
+                digit!,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurface,
+                ),
+              )
+            : isActive
+                ? Container(
+                    width: 2,
+                    height: 24,
+                    color: AppColors.primary,
+                  )
+                : null,
       ),
     );
   }
