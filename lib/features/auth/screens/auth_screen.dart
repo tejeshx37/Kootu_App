@@ -49,7 +49,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       return;
     }
     setState(() => _error = null);
-    await ref.read(authServiceProvider).verifyPhone(
+    final svc = ref.read(authServiceProvider);
+    if (svc == null) {
+      setState(() => _error = 'Firebase not configured — run flutterfire configure.');
+      return;
+    }
+    await svc.verifyPhone(
           phoneE164: phone,
           codeSent: (id, _) {
             setState(() {
@@ -79,8 +84,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final code = _otp.map((c) => c.text).join();
     if (code.length != 6 || _verificationId == null) return;
     setState(() => _stage = _Stage.verifying);
+    final svc = ref.read(authServiceProvider);
+    if (svc == null) {
+      setState(() { _stage = _Stage.otp; _error = 'Firebase not configured.'; });
+      return;
+    }
     try {
-      final cred = await ref.read(authServiceProvider).signInWithSmsCode(
+      final cred = await svc.signInWithSmsCode(
             verificationId: _verificationId!,
             smsCode: code,
           );
