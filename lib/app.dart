@@ -16,6 +16,8 @@ import 'features/offers/screens/offers_screen.dart';
 import 'features/profile/screens/profile_nicknames_screen.dart';
 import 'features/profile/screens/profile_rooms_screen.dart';
 import 'features/profile/screens/profile_screen.dart';
+import 'features/rooms/screens/create_room_screen.dart';
+import 'features/rooms/screens/join_room_screen.dart';
 import 'shared/widgets/bottom_nav.dart';
 
 class KootuApp extends ConsumerWidget {
@@ -75,6 +77,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/profile/rooms',
           builder: (_, __) => const ProfileRoomsScreen()),
+      GoRoute(
+          path: '/rooms/create',
+          builder: (_, __) => const CreateRoomScreen()),
+      GoRoute(
+          path: '/rooms/join',
+          builder: (_, __) => const JoinRoomScreen()),
       GoRoute(
           path: '/profile/nicknames',
           builder: (_, __) => const ProfileNicknamesScreen()),
