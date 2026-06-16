@@ -53,25 +53,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
     final pendingCount = items.where((i) => !i.bought).length;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Offers'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                const Text('Matched only',
-                    style: TextStyle(fontSize: 12)),
-                Switch(
-                  value: matchedOnly,
-                  onChanged: (v) =>
-                      ref.read(matchedOnlyProvider.notifier).state = v,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Offers')),
       body: offersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Failed to load: $e')),
@@ -104,7 +86,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
             children: [
               Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    const EdgeInsets.fromLTRB(16, 8, 8, 4),
                 child: Row(
                   children: [
                     Expanded(
@@ -116,33 +98,47 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                         ),
                       ),
                     ),
+                    const Text('Matched only',
+                        style: TextStyle(fontSize: 12)),
+                    Switch.adaptive(
+                      value: matchedOnly,
+                      onChanged: (v) =>
+                          ref.read(matchedOnlyProvider.notifier).state = v,
+                    ),
                   ],
                 ),
               ),
-              SizedBox(
-                height: 40,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  children: [
-                    _chip('All', _selCat == 'all',
-                        () => setState(() => _selCat = 'all')),
-                    for (final c in Categories.all)
-                      _chip(c.label, _selCat == c.id,
-                          () => setState(() => _selCat = c.id)),
-                  ],
+              const _GroupLabel('CATEGORY'),
+              _FadingHScroll(
+                child: SizedBox(
+                  height: 40,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    children: [
+                      _chip('All', _selCat == 'all',
+                          () => setState(() => _selCat = 'all')),
+                      for (final c in Categories.all)
+                        _chip(c.label, _selCat == c.id,
+                            () => setState(() => _selCat = c.id)),
+                    ],
+                  ),
                 ),
               ),
-              SizedBox(
-                height: 40,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  children: [
-                    for (final (label, value) in _distanceOptions)
-                      _chip(label, _maxDistance == value,
-                          () => setState(() => _maxDistance = value)),
-                  ],
+              const SizedBox(height: 10),
+              const _GroupLabel('DISTANCE'),
+              _FadingHScroll(
+                child: SizedBox(
+                  height: 40,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    children: [
+                      for (final (label, value) in _distanceOptions)
+                        _chip(label, _maxDistance == value,
+                            () => setState(() => _maxDistance = value)),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -209,6 +205,46 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _GroupLabel extends StatelessWidget {
+  const _GroupLabel(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 11,
+          letterSpacing: 1.2,
+          fontWeight: FontWeight.w700,
+          color: AppColors.lightTextSecondary,
+        ),
+      ),
+    );
+  }
+}
+
+class _FadingHScroll extends StatelessWidget {
+  const _FadingHScroll({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      shaderCallback: (rect) => const LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        stops: [0.0, 0.92, 1.0],
+        colors: [Colors.black, Colors.black, Colors.transparent],
+      ).createShader(rect),
+      blendMode: BlendMode.dstIn,
+      child: child,
     );
   }
 }

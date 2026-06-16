@@ -29,17 +29,16 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 12, 16, 14),
                 child: Row(
-                  children: const [
+                  children: [
                     Icon(Icons.location_on_rounded,
-                        size: 18, color: AppColors.primary),
+                        size: 20, color: AppColors.primary),
                     SizedBox(width: 6),
                     Text('Velachery, Chennai',
                         style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w600)),
+                            fontSize: 16, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
@@ -57,19 +56,21 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     // Products tab
                     Column(
                       children: [
-                        SizedBox(
-                          height: 40,
-                          child: ListView(
-                            scrollDirection: Axis.horizontal,
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 12),
-                            children: [
-                              _chip('All', _selCat == 'all',
-                                  () => setState(() => _selCat = 'all')),
-                              for (final c in Categories.all)
-                                _chip(c.label, _selCat == c.id,
-                                    () => setState(() => _selCat = c.id)),
-                            ],
+                        _FadingHScroll(
+                          child: SizedBox(
+                            height: 40,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12),
+                              children: [
+                                _chip('All', _selCat == 'all',
+                                    () => setState(() => _selCat = 'all')),
+                                for (final c in Categories.all)
+                                  _chip(c.label, _selCat == c.id,
+                                      () => setState(() => _selCat = c.id)),
+                              ],
+                            ),
                           ),
                         ),
                         Expanded(
@@ -162,3 +163,23 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     );
   }
 }
+
+class _FadingHScroll extends StatelessWidget {
+  const _FadingHScroll({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      shaderCallback: (rect) => const LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        stops: [0.0, 0.92, 1.0],
+        colors: [Colors.black, Colors.black, Colors.transparent],
+      ).createShader(rect),
+      blendMode: BlendMode.dstIn,
+      child: child,
+    );
+  }
+}
+
