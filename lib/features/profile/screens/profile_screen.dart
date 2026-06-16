@@ -150,7 +150,7 @@ class ProfileScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: OutlinedButton(
               onPressed: () =>
-                  ref.read(authServiceProvider).signOut(),
+                  ref.read(authServiceProvider)?.signOut(),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.error,
                 side: const BorderSide(color: AppColors.error),
