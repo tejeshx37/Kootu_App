@@ -11,6 +11,7 @@ class Room {
   final int itemCount;
   final int neededCount;
   final RoomBudget? budget;
+  final String? inviteCode;
 
   const Room({
     required this.id,
@@ -23,6 +24,7 @@ class Room {
     this.itemCount = 0,
     this.neededCount = 0,
     this.budget,
+    this.inviteCode,
   });
 
   factory Room.fromMap(String id, Map<String, dynamic> data) => Room(
@@ -42,6 +44,7 @@ class Room {
             ? null
             : RoomBudget.fromMap(
                 Map<String, dynamic>.from(data['budget'] as Map)),
+        inviteCode: data['inviteCode'] as String?,
       );
 }
 

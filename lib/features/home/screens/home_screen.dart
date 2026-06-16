@@ -47,9 +47,8 @@ class HomeScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 6),
                         RoomSwitcher(
-                          onCreateRoom: () =>
-                              _todo(context, 'Create Room'),
-                          onJoinRoom: () => _todo(context, 'Join Room'),
+                          onCreateRoom: () => context.push('/rooms/create'),
+                          onJoinRoom: () => context.push('/rooms/join'),
                         ),
                       ],
                     ),
@@ -165,9 +164,4 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  void _todo(BuildContext c, String what) {
-    ScaffoldMessenger.of(c).showSnackBar(
-      SnackBar(content: Text('$what — coming soon')),
-    );
-  }
 }
