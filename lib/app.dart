@@ -24,7 +24,7 @@ class KootuApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mode = ref.watch(themeModeProvider);
-    final router = _buildRouter(ref);
+    final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: 'Kootu',
       debugShowCheckedModeBanner: false,
@@ -36,18 +36,19 @@ class KootuApp extends ConsumerWidget {
   }
 }
 
-GoRouter _buildRouter(WidgetRef ref) {
+final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/home',
     redirect: (ctx, state) {
-      final authed = ref.read(authStateProvider).asData?.value != null;
-      final atOnboarding = state.matchedLocation == '/onboarding';
-      final atAuth = state.matchedLocation == '/auth';
-      // For dev convenience we allow unauthenticated browsing (mock data
-      // fallbacks are in place). Auth gating can be tightened later by
-      // returning '/onboarding' when !authed && !atOnboarding && !atAuth.
-      if (atAuth && authed) return '/home';
-      if (atOnboarding && authed) return '/home';
+      final auth = ref.watch(authStateProvider);
+      // Wait for the auth stream's first event before redirecting so we don't
+      // bounce off /home into /onboarding on cold start.
+      if (auth.isLoading) return null;
+      final authed = auth.asData?.value != null;
+      final loc = state.matchedLocation;
+      final atGate = loc == '/auth' || loc == '/onboarding';
+      if (!authed && !atGate) return '/onboarding';
+      if (authed && atGate) return '/home';
       return null;
     },
     routes: [
@@ -90,4 +91,4 @@ GoRouter _buildRouter(WidgetRef ref) {
       ),
     ],
   );
-}
+});

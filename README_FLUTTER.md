@@ -5,12 +5,39 @@ This Flutter app is a 1:1 functional port of the React/TSX prototype in `src/`.
 ## Quick start
 
 ```bash
+# 1. Scaffold the Android side (one-time, if android/ is missing):
+flutter create . --platforms=android --org com.kootu
+
+# 2. Wire up Firebase (asia-south1):
+#    - In Firebase console: create project, enable Auth (Phone),
+#      Firestore, Storage, FCM. Add test number +91 9999999999 → 123456.
+dart pub global activate flutterfire_cli
+flutterfire configure --project=<your-firebase-project>
+# This rewrites lib/firebase_options.dart and drops google-services.json
+# under android/app/. Then bump android/app/build.gradle minSdkVersion to 23
+# (Firebase Auth requires it).
+
+# 3. Deploy Firestore rules + indexes (requires firebase-tools):
+npm i -g firebase-tools
+firebase login
+firebase use <your-firebase-project>
+firebase deploy --only firestore:rules,firestore:indexes
+
+# 4. Run on device:
 flutter pub get
-# Wire up Firebase for Android (asia-south1):
-#   dart pub global activate flutterfire_cli
-#   flutterfire configure --project=<your-firebase-project>
 flutter run -d <android-device>
 ```
+
+### What's wired up
+
+- Phone-OTP sign-in via `AuthService.verifyPhone` / `signInWithSmsCode`.
+- First sign-in calls `FirestoreService.bootstrapNewUser` which creates
+  `users/{uid}` and seeds one `Family Room` with 6 starter items (same
+  payload as `MockData.itemsByRoom['1']`), so the Home screen renders
+  immediately for brand-new accounts.
+- The router (in `app.dart`) redirects unauthenticated traffic to
+  `/onboarding`. Mock data still backs every signed-out preview.
+- `firestore.rules` + `firestore.indexes.json` ship at the repo root.
 
 ## Project layout
 

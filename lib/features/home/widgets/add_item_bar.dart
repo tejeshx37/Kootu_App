@@ -25,6 +25,16 @@ class _AddItemBarState extends ConsumerState<AddItemBar> {
     super.dispose();
   }
 
+  String _displayName(User? user) {
+    final name = user?.displayName;
+    if (name != null && name.isNotEmpty) return name;
+    final phone = user?.phoneNumber;
+    if (phone != null && phone.length >= 4) {
+      return 'User ${phone.substring(phone.length - 4)}';
+    }
+    return 'You';
+  }
+
   Future<void> _submit() async {
     final name = _ctrl.text.trim();
     if (name.isEmpty) return;
@@ -35,7 +45,7 @@ class _AddItemBarState extends ConsumerState<AddItemBar> {
       name: name,
       categoryId: cat.id,
       addedBy: user?.uid ?? 'me',
-      addedByName: user?.displayName ?? 'You',
+      addedByName: _displayName(user),
       addedAt: DateTime.now(),
       bought: false,
     );

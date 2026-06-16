@@ -1,20 +1,23 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'core/providers/theme_provider.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Firebase init. Configure via FlutterFire CLI to add the
-  // platform-specific options (firebase_options.dart). For now we use the
-  // default app so the project compiles before platform setup is run.
   try {
-    await Firebase.initializeApp();
-  } catch (_) {
-    // Allows running before FlutterFire CLI has been wired up.
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e, st) {
+    // Surface the failure during dev (the providers fall back to mock data
+    // when there is no signed-in user, so the app still launches).
+    debugPrint('Firebase.initializeApp failed: $e\n$st');
   }
   final prefs = await SharedPreferences.getInstance();
 

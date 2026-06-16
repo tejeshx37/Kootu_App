@@ -12,6 +12,54 @@ class FirestoreService {
   final FirebaseFirestore _db;
 
   // Users
+  /// Creates `users/{uid}` and seeds a default Family Room with the same set
+  /// of items that ship in MockData['1']. Idempotent: if the user doc already
+  /// exists we do nothing.
+  Future<String?> bootstrapNewUser({
+    required String uid,
+    required String phone,
+    required List<ListItem> seedItems,
+  }) async {
+    final userRef = _db.collection('users').doc(uid);
+    final existing = await userRef.get();
+    if (existing.exists) return null;
+
+    final roomRef = _db.collection('rooms').doc();
+    final now = DateTime.now();
+    final batch = _db.batch();
+
+    batch.set(roomRef, {
+      'name': 'Family Room',
+      'emoji': '🏠',
+      'createdBy': uid,
+      'memberIds': [uid],
+      'memberAvatars': const ['👤'],
+      'createdAt': Timestamp.fromDate(now),
+      'itemCount': seedItems.length,
+      'neededCount': seedItems.where((i) => !i.bought).length,
+    });
+
+    for (final item in seedItems) {
+      final itemRef = roomRef.collection('items').doc();
+      final map = item.toMap();
+      map['addedBy'] = uid;
+      batch.set(itemRef, map);
+    }
+
+    batch.set(userRef, AppUser(
+      id: uid,
+      name: 'Friend',
+      phone: phone,
+      locality: 'Chennai',
+      city: 'Chennai',
+      memberSince: now,
+      activeRoomIds: [roomRef.id],
+    ).toMap());
+
+    await batch.commit();
+    return roomRef.id;
+  }
+
   Future<AppUser?> getUser(String userId) async {
     final snap = await _db.collection('users').doc(userId).get();
     if (!snap.exists) return null;
