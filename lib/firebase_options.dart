@@ -16,7 +16,15 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
       case TargetPlatform.iOS:
       default:
-        throw UnsupportedError('unconfigured platform');
+        return android;
     }
   }
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyB7PPPcVH84u4h9WZdPjnWbNWdDfrueZio',
+    appId: '1:1031395777844:android:87e778fd7ef041a6ced961',
+    messagingSenderId: '1031395777844',
+    projectId: 'kootuapp',
+    storageBucket: 'kootuapp.firebasestorage.app',
+  );
 }
