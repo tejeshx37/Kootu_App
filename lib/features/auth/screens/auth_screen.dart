@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/data/mock_data.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/data_providers.dart';
 import '../../../core/theme/app_colors.dart';
 
 enum _Stage { phone, otp, verifying, done }
@@ -78,10 +80,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     if (code.length != 6 || _verificationId == null) return;
     setState(() => _stage = _Stage.verifying);
     try {
-      await ref.read(authServiceProvider).signInWithSmsCode(
+      final cred = await ref.read(authServiceProvider).signInWithSmsCode(
             verificationId: _verificationId!,
             smsCode: code,
           );
+      if (cred.additionalUserInfo?.isNewUser == true && cred.user != null) {
+        await ref.read(firestoreServiceProvider).bootstrapNewUser(
+              uid: cred.user!.uid,
+              phone: cred.user!.phoneNumber ?? '+91${_phoneCtrl.text.trim()}',
+              seedItems: MockData.itemsByRoom['1'] ?? const [],
+            );
+      }
       // Router redirect will handle navigation away.
       setState(() => _stage = _Stage.done);
     } on FirebaseAuthException catch (e) {
