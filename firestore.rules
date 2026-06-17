@@ -15,12 +15,16 @@ service cloud.firestore {
 
       // Existing members can edit anything. Non-members can ONLY add themselves
       // to memberIds (the join flow) — they reach this rule via an invite code
-      // lookup, since they otherwise don't know the room id.
+      // lookup, since they otherwise don't know the room id. The join branch
+      // must preserve every existing member (no kicking / takeover) and may
+      // only touch the membership fields.
       allow update: if request.auth != null
         && (
           request.auth.uid in resource.data.memberIds
           || (
-            request.auth.uid in request.resource.data.memberIds
+            !(request.auth.uid in resource.data.memberIds)
+            && request.auth.uid in request.resource.data.memberIds
+            && request.resource.data.memberIds.hasAll(resource.data.memberIds)
             && request.resource.data.diff(resource.data).affectedKeys()
                 .hasOnly(['memberIds', 'memberAvatars'])
           )
@@ -37,7 +41,11 @@ service cloud.firestore {
     }
 
     match /invites/{code} {
-      allow read: if request.auth != null;
+      // Single-document lookup ONLY (get). `list` is intentionally denied so a
+      // signed-in user cannot enumerate the collection to harvest every roomId
+      // and join rooms they were never invited to. The client looks codes up by
+      // exact id (invites/{CODE}.get()), which this permits.
+      allow get: if request.auth != null;
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.createdBy;
       allow delete: if request.auth != null
