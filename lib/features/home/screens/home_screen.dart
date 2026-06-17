@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/providers/data_providers.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/notebook_background.dart';
 import '../widgets/add_item_bar.dart';
 import '../widgets/item_card.dart';
 import '../widgets/room_switcher.dart';
@@ -26,7 +27,12 @@ class HomeScreen extends ConsumerWidget {
     final itemsAsync = ref.watch(itemsProvider(roomId));
 
     return Scaffold(
-      body: SafeArea(
+      // Paper backdrop sits behind everything so the whole page reads as a
+      // single notebook sheet you're writing your list onto.
+      body: Stack(
+        children: [
+          const Positioned.fill(child: NotebookBackground()),
+          SafeArea(
         child: Column(
           children: [
             // Header
@@ -96,9 +102,9 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
 
-            // Add item bar
+            // Add item bar — the active line you write the next item on.
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
               child: AddItemBar(roomId: roomId),
             ),
 
@@ -126,8 +132,7 @@ class HomeScreen extends ConsumerWidget {
                     );
                   }
                   return ListView(
-                    padding:
-                        const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    padding: const EdgeInsets.only(bottom: 24),
                     children: [
                       for (var i = 0; i < pending.length; i++)
                         ItemCard(item: pending[i], roomId: roomId)
@@ -137,9 +142,9 @@ class HomeScreen extends ConsumerWidget {
                                 delay: (i * 40).ms)
                             .moveY(begin: 6, end: 0),
                       if (bought.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        const SizedBox(height: 18),
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(40, 0, 16, 8),
                           child: Text(
                             'BOUGHT',
                             style: TextStyle(
@@ -160,6 +165,8 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
         ),
+          ),
+        ],
       ),
     );
   }

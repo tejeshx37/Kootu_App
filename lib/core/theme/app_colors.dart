@@ -34,6 +34,15 @@ class AppColors {
   static const Color darkTextSecondary = Color(0xFFB5B5B5);
   static const Color darkMuted = Color(0xFF2A2A3A);
   static const Color darkBorder = Color(0x14FFFFFF);
+
+  // Notebook paper (shared by NotebookBackground + ruled list rows so the
+  // page lines and the lines under each written item always match).
+  static const Color paperLight = Color(0xFFFBF7EC); // warm cream sheet
+  static const Color paperDark = Color(0xFF14141F); // deep slate page
+  static const Color paperRuleLight = Color(0xFFD7E1EF); // light blue ruling
+  static const Color paperRuleDark = Color(0x12FFFFFF); // white ~7%
+  static const Color paperMarginLight = Color(0xFFE7A39B); // faded red margin
+  static const Color paperMarginDark = Color(0x33FF6B35); // accent ~20%
 }
 
 class AppRadii {

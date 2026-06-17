@@ -42,10 +42,16 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   ],
                 ),
               ),
-              const TabBar(
+              TabBar(
                 labelColor: AppColors.primary,
                 indicatorColor: AppColors.primary,
-                tabs: [
+                indicatorSize: TabBarIndicatorSize.label,
+                dividerColor: Theme.of(context).colorScheme.outline,
+                labelStyle: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w700),
+                unselectedLabelStyle: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w600),
+                tabs: const [
                   Tab(text: 'Products'),
                   Tab(text: 'Services'),
                 ],
@@ -56,6 +62,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     // Products tab
                     Column(
                       children: [
+                        const SizedBox(height: 14),
                         _FadingHScroll(
                           child: SizedBox(
                             height: 40,
@@ -75,7 +82,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                         ),
                         Expanded(
                           child: ListView.builder(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                             itemCount: filtered.length,
                             itemBuilder: (ctx, i) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
@@ -87,7 +94,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     ),
                     // Services tab
                     ListView(
-                      padding: const EdgeInsets.only(top: 12, bottom: 24),
+                      padding: const EdgeInsets.only(top: 16, bottom: 24),
                       children: [
                         Padding(
                           padding:
@@ -145,10 +152,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
         child: Container(
           alignment: Alignment.center,
           padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
           decoration: BoxDecoration(
             color: active ? AppColors.primary : AppColors.primarySoft,
             borderRadius: BorderRadius.circular(AppRadii.pill),
+            boxShadow:
+                active ? AppShadows.brand(false) : null,
           ),
           child: Text(
             label,

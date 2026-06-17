@@ -8,6 +8,7 @@ import '../../../core/models/list_item.dart';
 import '../../../core/providers/data_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/category_tag.dart';
+import '../../../shared/widgets/notebook_background.dart';
 
 class ItemCard extends ConsumerWidget {
   const ItemCard({super.key, required this.item, required this.roomId});
@@ -37,54 +38,65 @@ class ItemCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cat = Categories.byId(item.categoryId);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Each item reads as a line written in the notebook: no card box, a ruled
+    // underline matching the page, the checkbox in the left gutter, and the
+    // text starting just to the right of the red margin rule.
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 220),
-      opacity: item.bought ? 0.55 : 1.0,
+      opacity: item.bought ? 0.5 : 1.0,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOut,
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        padding: const EdgeInsets.fromLTRB(0, 12, 16, 12),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          border: Border.all(
-            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          border: Border(
+            bottom: BorderSide(
+              color: NotebookBackground.ruleColor(isDark),
+              width: 1,
+            ),
           ),
-          boxShadow: item.bought ? null : AppShadows.soft(isDark),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GestureDetector(
-              onTap: () => _toggle(ref),
-              behavior: HitTestBehavior.opaque,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                width: 23,
-                height: 23,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: item.bought ? AppColors.success : Colors.transparent,
-                  border: Border.all(
-                    color: item.bought
-                        ? AppColors.success
-                        : AppColors.lightTextSecondary,
-                    width: 1.6,
+            // Gutter: checkbox sits left of the margin rule.
+            SizedBox(
+              width: NotebookBackground.defaultMarginX,
+              child: Center(
+                child: GestureDetector(
+                  onTap: () => _toggle(ref),
+                  behavior: HitTestBehavior.opaque,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color:
+                          item.bought ? AppColors.success : Colors.transparent,
+                      border: Border.all(
+                        color: item.bought
+                            ? AppColors.success
+                            : AppColors.lightTextSecondary,
+                        width: 1.6,
+                      ),
+                      boxShadow: item.bought
+                          ? [
+                              BoxShadow(
+                                color:
+                                    AppColors.success.withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: item.bought
+                        ? const Icon(Icons.check, size: 13, color: Colors.white)
+                        : null,
                   ),
-                  boxShadow: item.bought
-                      ? [
-                          BoxShadow(
-                            color: AppColors.success.withValues(alpha: 0.35),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
                 ),
-                child: item.bought
-                    ? const Icon(Icons.check, size: 14, color: Colors.white)
-                    : null,
               ),
             ),
             const SizedBox(width: 12),
