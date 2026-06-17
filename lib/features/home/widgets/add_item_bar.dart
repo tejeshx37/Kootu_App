@@ -61,15 +61,22 @@ class _AddItemBarState extends ConsumerState<AddItemBar> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Container(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
       decoration: BoxDecoration(
         color: scheme.surface,
-        borderRadius: BorderRadius.circular(AppRadii.md),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.4),
+          color: AppColors.primary
+              .withValues(alpha: _expanded ? 0.65 : 0.35),
           style: BorderStyle.solid,
-          width: 1.2,
+          width: 1.4,
         ),
+        boxShadow: _expanded
+            ? AppShadows.brand(isDark)
+            : AppShadows.soft(isDark),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
@@ -80,9 +87,10 @@ class _AddItemBarState extends ConsumerState<AddItemBar> {
             child: Container(
               width: 34,
               height: 34,
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
+              decoration: BoxDecoration(
+                gradient: AppGradients.brand,
                 shape: BoxShape.circle,
+                boxShadow: AppShadows.brand(isDark),
               ),
               child: const Icon(Icons.add_rounded,
                   color: Colors.white, size: 22),

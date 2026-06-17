@@ -46,6 +46,76 @@ class AppRadii {
   static const double sheet = 28;
 }
 
+/// Brightness-aware elevation tokens. Light mode uses layered, low-opacity
+/// shadows for soft depth; dark mode uses a single deeper shadow so surfaces
+/// still read as "lifted" against the near-black background.
+class AppShadows {
+  AppShadows._();
+
+  /// Resting depth for list rows / inline cards.
+  static List<BoxShadow> soft(bool isDark) => isDark
+      ? const [
+          BoxShadow(
+              color: Color(0x33000000), blurRadius: 12, offset: Offset(0, 4)),
+        ]
+      : const [
+          BoxShadow(
+              color: Color(0x0A1A1A2E), blurRadius: 2, offset: Offset(0, 1)),
+          BoxShadow(
+              color: Color(0x0F1A1A2E), blurRadius: 10, offset: Offset(0, 4)),
+        ];
+
+  /// A touch more lift for primary cards and tiles.
+  static List<BoxShadow> card(bool isDark) => isDark
+      ? const [
+          BoxShadow(
+              color: Color(0x40000000), blurRadius: 18, offset: Offset(0, 8)),
+        ]
+      : const [
+          BoxShadow(
+              color: Color(0x0D1A1A2E), blurRadius: 3, offset: Offset(0, 1)),
+          BoxShadow(
+              color: Color(0x171A1A2E), blurRadius: 18, offset: Offset(0, 10)),
+        ];
+
+  /// Floating elements: bottom nav, FABs, sheets.
+  static List<BoxShadow> floating(bool isDark) => isDark
+      ? const [
+          BoxShadow(
+              color: Color(0x59000000), blurRadius: 24, offset: Offset(0, -2)),
+        ]
+      : const [
+          BoxShadow(
+              color: Color(0x141A1A2E), blurRadius: 24, offset: Offset(0, -4)),
+        ];
+
+  /// Coloured glow under brand-primary elements.
+  static List<BoxShadow> brand(bool isDark) => [
+        BoxShadow(
+          color: primary.withValues(alpha: isDark ? 0.42 : 0.30),
+          blurRadius: 16,
+          offset: const Offset(0, 6),
+        ),
+      ];
+}
+
+/// Brand gradients used on hero / primary surfaces for extra dimensionality.
+class AppGradients {
+  AppGradients._();
+
+  static const LinearGradient brand = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF25B886), AppColors.primary],
+  );
+
+  static const LinearGradient accent = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFFF8A5B), AppColors.accent],
+  );
+}
+
 class AppSpacing {
   AppSpacing._();
   static const double xs = 8;

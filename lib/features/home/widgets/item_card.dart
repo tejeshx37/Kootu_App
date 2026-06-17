@@ -37,25 +37,32 @@ class ItemCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cat = Categories.byId(item.categoryId);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Opacity(
-      opacity: item.bought ? 0.6 : 1.0,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 220),
+      opacity: item.bought ? 0.55 : 1.0,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
           border: Border.all(
             color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
           ),
+          boxShadow: item.bought ? null : AppShadows.soft(isDark),
         ),
         child: Row(
           children: [
             GestureDetector(
               onTap: () => _toggle(ref),
-              child: Container(
-                width: 22,
-                height: 22,
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                width: 23,
+                height: 23,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: item.bought ? AppColors.success : Colors.transparent,
@@ -65,6 +72,15 @@ class ItemCard extends ConsumerWidget {
                         : AppColors.lightTextSecondary,
                     width: 1.6,
                   ),
+                  boxShadow: item.bought
+                      ? [
+                          BoxShadow(
+                            color: AppColors.success.withValues(alpha: 0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: item.bought
                     ? const Icon(Icons.check, size: 14, color: Colors.white)

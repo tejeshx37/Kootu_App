@@ -20,14 +20,16 @@ class RoomSwitcher extends ConsumerWidget {
     final selected = ref.watch(selectedRoomProvider);
     final rooms = ref.watch(roomsProvider).asData?.value ?? const <Room>[];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       borderRadius: BorderRadius.circular(AppRadii.pill),
       onTap: () => _showSheet(context, ref, rooms),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: AppColors.primarySoft,
+          gradient: AppGradients.brand,
           borderRadius: BorderRadius.circular(AppRadii.pill),
+          boxShadow: AppShadows.brand(isDark),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -38,14 +40,14 @@ class RoomSwitcher extends ConsumerWidget {
             Text(
               selected?.name ?? 'Pick a room',
               style: const TextStyle(
-                color: AppColors.primary,
+                color: Colors.white,
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
               ),
             ),
             const SizedBox(width: 4),
             const Icon(Icons.keyboard_arrow_down_rounded,
-                color: AppColors.primary, size: 20),
+                color: Colors.white, size: 20),
           ],
         ),
       ),
