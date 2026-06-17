@@ -6,6 +6,7 @@ import '../../../core/constants/categories.dart';
 import '../../../core/models/list_item.dart';
 import '../../../core/providers/data_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/notebook_background.dart';
 
 class AddItemBar extends ConsumerStatefulWidget {
   const AddItemBar({super.key, required this.roomId});
@@ -60,40 +61,45 @@ class _AddItemBarState extends ConsumerState<AddItemBar> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // The active writing line: a ruled underline (highlighted while focused)
+    // with the + in the gutter, so adding an item feels like writing the next
+    // line on the page.
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
+      padding: const EdgeInsets.only(right: 12, top: 4, bottom: 8),
       decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(
-          color: AppColors.primary
-              .withValues(alpha: _expanded ? 0.65 : 0.35),
-          style: BorderStyle.solid,
-          width: 1.4,
+        border: Border(
+          bottom: BorderSide(
+            color: _expanded
+                ? AppColors.primary
+                : NotebookBackground.ruleColor(isDark),
+            width: _expanded ? 1.6 : 1,
+          ),
         ),
-        boxShadow: _expanded
-            ? AppShadows.brand(isDark)
-            : AppShadows.soft(isDark),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          InkWell(
-            onTap: () => setState(() => _expanded = true),
-            borderRadius: BorderRadius.circular(AppRadii.pill),
-            child: Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                gradient: AppGradients.brand,
-                shape: BoxShape.circle,
-                boxShadow: AppShadows.brand(isDark),
+          // Gutter: + button sits left of the margin rule, like the checkboxes.
+          SizedBox(
+            width: NotebookBackground.defaultMarginX,
+            child: Center(
+              child: InkWell(
+                onTap: () => setState(() => _expanded = true),
+                borderRadius: BorderRadius.circular(AppRadii.pill),
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.brand,
+                    shape: BoxShape.circle,
+                    boxShadow: AppShadows.brand(isDark),
+                  ),
+                  child: const Icon(Icons.add_rounded,
+                      color: Colors.white, size: 17),
+                ),
               ),
-              child: const Icon(Icons.add_rounded,
-                  color: Colors.white, size: 22),
             ),
           ),
           const SizedBox(width: 12),

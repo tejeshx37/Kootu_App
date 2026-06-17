@@ -102,9 +102,9 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
 
-            // Add item bar
+            // Add item bar — the active line you write the next item on.
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
               child: AddItemBar(roomId: roomId),
             ),
 
@@ -132,8 +132,7 @@ class HomeScreen extends ConsumerWidget {
                     );
                   }
                   return ListView(
-                    padding:
-                        const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    padding: const EdgeInsets.only(bottom: 24),
                     children: [
                       for (var i = 0; i < pending.length; i++)
                         ItemCard(item: pending[i], roomId: roomId)
@@ -143,9 +142,9 @@ class HomeScreen extends ConsumerWidget {
                                 delay: (i * 40).ms)
                             .moveY(begin: 6, end: 0),
                       if (bought.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        const SizedBox(height: 18),
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(40, 0, 16, 8),
                           child: Text(
                             'BOUGHT',
                             style: TextStyle(

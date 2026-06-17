@@ -23,6 +23,15 @@ class NotebookBackground extends StatelessWidget {
   /// Distance of the vertical margin rule from the left edge.
   final double marginX;
 
+  /// Default horizontal position of the margin rule, shared with list rows so
+  /// written items start just to the right of it.
+  static const double defaultMarginX = 28;
+
+  /// The ruling colour for the current brightness — used by row underlines so
+  /// the lines under items match the page's ruled lines exactly.
+  static Color ruleColor(bool isDark) =>
+      isDark ? AppColors.paperRuleDark : AppColors.paperRuleLight;
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -50,23 +59,23 @@ class _NotebookPainter extends CustomPainter {
   final double marginX;
 
   // Warm cream paper in light mode; a deep slate "page" in dark mode.
-  Color get _paper =>
-      isDark ? const Color(0xFF14141F) : const Color(0xFFFBF7EC);
+  Color get _paper => isDark ? AppColors.paperDark : AppColors.paperLight;
 
   Color get _ruleLine =>
-      isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFD7E1EF);
+      isDark ? AppColors.paperRuleDark : AppColors.paperRuleLight;
 
-  Color get _marginLine => isDark
-      ? AppColors.accent.withValues(alpha: 0.18)
-      : const Color(0xFFE9A8A0);
+  Color get _marginLine =>
+      isDark ? AppColors.paperMarginDark : AppColors.paperMarginLight;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paperPaint = Paint()..color = _paper;
     canvas.drawRect(Offset.zero & size, paperPaint);
 
+    // Background ruling is kept lighter than the row underlines so it reads as
+    // page texture and doesn't fight with the lines under written items.
     final rulePaint = Paint()
-      ..color = _ruleLine
+      ..color = _ruleLine.withValues(alpha: _ruleLine.a * 0.55)
       ..strokeWidth = 1;
 
     // Horizontal ruled lines, starting a little below the top edge.
