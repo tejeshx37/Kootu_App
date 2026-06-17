@@ -130,10 +130,9 @@ class ItemCard extends ConsumerWidget {
               ),
             ),
           ],
-            ),
+        ),
           ),
         ),
-      ),
     );
   }
 }
