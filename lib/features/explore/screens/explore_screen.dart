@@ -122,7 +122,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                                   fontWeight: FontWeight.w700)),
                         ),
                         SizedBox(
-                          height: 170,
+                          height: 210,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             padding:

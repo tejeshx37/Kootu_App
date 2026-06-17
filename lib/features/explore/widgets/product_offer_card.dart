@@ -58,10 +58,14 @@ class ProductOfferCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text(offer.description,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12)),
+          // Let the description take whatever vertical space is left so the
+          // card adapts to its container without overflowing.
+          Flexible(
+            child: Text(offer.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12)),
+          ),
           const SizedBox(height: 6),
           Text('Save ₹${offer.savings}',
               style: const TextStyle(
