@@ -34,6 +34,7 @@ class BottomNavScaffold extends StatelessWidget {
               color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
             ),
           ),
+          boxShadow: AppShadows.floating(isDark),
         ),
         child: SafeArea(
           top: false,

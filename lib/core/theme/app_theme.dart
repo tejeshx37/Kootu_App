@@ -78,10 +78,14 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: scheme.surface,
-        elevation: 0,
+        elevation: isDark ? 2 : 6,
+        shadowColor: isDark
+            ? Colors.black.withValues(alpha: 0.5)
+            : const Color(0xFF1A1A2E).withValues(alpha: 0.10),
+        surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
           side: BorderSide(color: scheme.outline),
         ),
       ),
@@ -114,19 +118,45 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          elevation: 0,
+          elevation: 4,
+          shadowColor: AppColors.primary.withValues(alpha: 0.45),
           padding:
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.md),
           ),
           textStyle:
-              bodyFont(fontSize: 15, fontWeight: FontWeight.w600),
+              bodyFont(fontSize: 15, fontWeight: FontWeight.w700),
+        ).copyWith(
+          // Subtle press feedback: shrink the shadow and lighten on tap.
+          elevation: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.pressed)) return 1;
+            return 4;
+          }),
+          overlayColor:
+              const WidgetStatePropertyAll(Color(0x1FFFFFFF)),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          padding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+          textStyle: bodyFont(fontSize: 15, fontWeight: FontWeight.w700),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: scheme.surface,
-        indicatorColor: AppColors.primarySoft,
+        indicatorColor: isDark
+            ? AppColors.primary.withValues(alpha: 0.22)
+            : AppColors.primarySoft,
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+        ),
         labelTextStyle: WidgetStatePropertyAll(
           bodyFont(fontSize: 11, fontWeight: FontWeight.w500),
         ),
@@ -161,6 +191,40 @@ class AppTheme {
         color: scheme.outline,
         space: 1,
         thickness: 1,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: scheme.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        modalElevation: 0,
+        showDragHandle: true,
+        dragHandleColor: scheme.outline,
+        shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadii.sheet)),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor:
+            isDark ? AppColors.darkSurface : AppColors.lightTextPrimary,
+        contentTextStyle: bodyFont(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.md),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: isDark ? AppColors.darkMuted : AppColors.lightMuted,
+        side: BorderSide.none,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+        ),
+        labelStyle: bodyFont(fontSize: 12, fontWeight: FontWeight.w600),
       ),
     );
   }

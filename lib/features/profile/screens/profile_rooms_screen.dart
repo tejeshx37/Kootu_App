@@ -64,15 +64,17 @@ class _RoomCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onLongPress: () => _showActions(context, ref),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
           border: Border.all(color: Theme.of(context).colorScheme.outline),
+          boxShadow: AppShadows.soft(isDark),
         ),
         child: Row(
           children: [

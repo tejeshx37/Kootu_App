@@ -31,14 +31,16 @@ class OfferCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cat = Categories.byId(offer.categoryId);
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: scheme.surface,
-        borderRadius: BorderRadius.circular(AppRadii.md),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         border: Border.all(color: scheme.outline),
+        boxShadow: AppShadows.card(isDark),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,10 +143,11 @@ class OfferCard extends StatelessWidget {
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 8),
+                  horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppRadii.xs),
+                gradient: AppGradients.brand,
+                borderRadius: BorderRadius.circular(AppRadii.sm),
+                boxShadow: AppShadows.brand(isDark),
               ),
               child: const Row(
                 children: [
