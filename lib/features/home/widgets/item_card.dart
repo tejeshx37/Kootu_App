@@ -37,75 +37,70 @@ class ItemCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cat = Categories.byId(item.categoryId);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    // Each item reads as a line written in the notebook: no card box, a ruled
-    // underline matching the page, the checkbox in the left gutter, and the
-    // text starting just to the right of the red margin rule.
+    // Each item occupies exactly one ruled line (NotebookMetrics.lineHeight),
+    // transparent and contiguous, so the rows line up perfectly with the ruled
+    // lines painted behind the list. The checkbox sits in the left gutter.
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 220),
       opacity: item.bought ? 0.5 : 1.0,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.fromLTRB(0, 12, 16, 12),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: NotebookBackground.ruleColor(isDark),
-              width: 1,
-            ),
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Gutter: checkbox sits left of the margin rule.
-            SizedBox(
-              width: NotebookBackground.defaultMarginX,
-              child: Center(
-                child: GestureDetector(
-                  onTap: () => _toggle(ref),
-                  behavior: HitTestBehavior.opaque,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOut,
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color:
-                          item.bought ? AppColors.success : Colors.transparent,
-                      border: Border.all(
+      child: RuledLine(
+        child: Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Gutter: checkbox sits left of the margin rule.
+              SizedBox(
+                width: NotebookMetrics.marginX,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () => _toggle(ref),
+                    behavior: HitTestBehavior.opaque,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOut,
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
                         color: item.bought
                             ? AppColors.success
-                            : AppColors.lightTextSecondary,
-                        width: 1.6,
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: item.bought
+                              ? AppColors.success
+                              : AppColors.lightTextSecondary,
+                          width: 1.6,
+                        ),
+                        boxShadow: item.bought
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.success
+                                      .withValues(alpha: 0.35),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
                       ),
-                      boxShadow: item.bought
-                          ? [
-                              BoxShadow(
-                                color:
-                                    AppColors.success.withValues(alpha: 0.35),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
+                      child: item.bought
+                          ? const Icon(Icons.check,
+                              size: 13, color: Colors.white)
                           : null,
                     ),
-                    child: item.bought
-                        ? const Icon(Icons.check, size: 13, color: Colors.white)
-                        : null,
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     item.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -135,6 +130,8 @@ class ItemCard extends ConsumerWidget {
               ),
             ),
           ],
+            ),
+          ),
         ),
       ),
     );

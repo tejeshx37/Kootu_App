@@ -117,48 +117,54 @@ class HomeScreen extends ConsumerWidget {
                 data: (items) {
                   final pending = items.where((i) => !i.bought).toList();
                   final bought = items.where((i) => i.bought).toList();
-                  if (items.isEmpty) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Text(
-                          'Nothing on this list yet.\nAdd your first item above.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.lightTextSecondary,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  return ListView(
-                    padding: const EdgeInsets.only(bottom: 24),
-                    children: [
-                      for (var i = 0; i < pending.length; i++)
-                        ItemCard(item: pending[i], roomId: roomId)
-                            .animate()
-                            .fadeIn(
-                                duration: 220.ms,
-                                delay: (i * 40).ms)
-                            .moveY(begin: 6, end: 0),
-                      if (bought.isNotEmpty) ...[
-                        const SizedBox(height: 18),
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(40, 0, 16, 8),
-                          child: Text(
-                            'BOUGHT',
-                            style: TextStyle(
-                              fontSize: 11,
-                              letterSpacing: 1.2,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.lightTextSecondary,
+
+                  // Build the written lines (each is exactly one ruled cell).
+                  final rows = <Widget>[
+                    for (var i = 0; i < pending.length; i++)
+                      ItemCard(item: pending[i], roomId: roomId)
+                          .animate()
+                          .fadeIn(duration: 220.ms, delay: (i * 40).ms)
+                          .moveY(begin: 6, end: 0),
+                    if (bought.isNotEmpty) ...[
+                      const RuledLine(
+                        child: Align(
+                          alignment: Alignment.bottomLeft,
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(40, 0, 16, 6),
+                            child: Text(
+                              'BOUGHT',
+                              style: TextStyle(
+                                fontSize: 11,
+                                letterSpacing: 1.2,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.lightTextSecondary,
+                              ),
                             ),
                           ),
                         ),
-                        for (final it in bought)
-                          ItemCard(item: it, roomId: roomId),
-                      ],
+                      ),
+                      for (final it in bought)
+                        ItemCard(item: it, roomId: roomId),
                     ],
+                  ];
+
+                  // Pad the rest of the page with empty ruled lines so the
+                  // whole sheet looks like ruled paper, perfectly aligned.
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final used = rows.length * NotebookMetrics.lineHeight;
+                      final remaining = constraints.maxHeight - used;
+                      final fillers = remaining > 0
+                          ? (remaining / NotebookMetrics.lineHeight).ceil()
+                          : 0;
+                      return ListView(
+                        padding: EdgeInsets.zero,
+                        children: [
+                          ...rows,
+                          for (var i = 0; i < fillers; i++) const RuledLine(),
+                        ],
+                      );
+                    },
                   );
                 },
               ),
