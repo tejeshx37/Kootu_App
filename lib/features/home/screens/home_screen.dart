@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/providers/data_providers.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/notebook_background.dart';
 import '../widgets/add_item_bar.dart';
 import '../widgets/item_card.dart';
 import '../widgets/room_switcher.dart';
@@ -26,7 +27,12 @@ class HomeScreen extends ConsumerWidget {
     final itemsAsync = ref.watch(itemsProvider(roomId));
 
     return Scaffold(
-      body: SafeArea(
+      // Paper backdrop sits behind everything so the whole page reads as a
+      // single notebook sheet you're writing your list onto.
+      body: Stack(
+        children: [
+          const Positioned.fill(child: NotebookBackground()),
+          SafeArea(
         child: Column(
           children: [
             // Header
@@ -160,6 +166,8 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
         ),
+          ),
+        ],
       ),
     );
   }
