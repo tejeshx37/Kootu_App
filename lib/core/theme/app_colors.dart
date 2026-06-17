@@ -92,7 +92,7 @@ class AppShadows {
   /// Coloured glow under brand-primary elements.
   static List<BoxShadow> brand(bool isDark) => [
         BoxShadow(
-          color: primary.withValues(alpha: isDark ? 0.42 : 0.30),
+          color: AppColors.primary.withValues(alpha: isDark ? 0.42 : 0.30),
           blurRadius: 16,
           offset: const Offset(0, 6),
         ),
