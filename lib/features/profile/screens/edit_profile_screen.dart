@@ -38,7 +38,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   void _hydrate() {
     if (_loaded) return;
-    final u = ref.read(currentUserProvider).asData?.value;
+    final u = ref.watch(currentUserProvider).asData?.value;
     if (u != null) {
       _nameCtrl.text = u.name;
       _localityCtrl.text = u.locality;

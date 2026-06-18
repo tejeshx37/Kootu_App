@@ -58,12 +58,11 @@ class AiCategorizer {
 
       if (resp.statusCode != 200) return fallback;
       final body = jsonDecode(resp.body) as Map<String, dynamic>;
-      final text = (((body['candidates'] as List?)?.first
-                  as Map<String, dynamic>?)?['content']
-              as Map<String, dynamic>?)?['parts'] is List
-          ? (((body['candidates'] as List).first['content']['parts'] as List)
-              .first['text'] as String?)
-          : null;
+      final candidates = body['candidates'] as List?;
+      if (candidates == null || candidates.isEmpty) return fallback;
+      final parts = (candidates.first as Map?)?['content']?['parts'] as List?;
+      if (parts == null || parts.isEmpty) return fallback;
+      final text = (parts.first as Map?)?['text'] as String?;
       if (text == null) return fallback;
 
       final guess = text.trim().toLowerCase();
