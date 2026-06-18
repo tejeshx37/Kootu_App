@@ -6,6 +6,7 @@ import '../../../core/models/list_item.dart';
 import '../../../core/models/offer.dart';
 import '../../../core/providers/data_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../widgets/offer_card.dart';
 
 const _distanceOptions = [
@@ -58,6 +59,16 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Failed to load: $e')),
         data: (offers) {
+          if (offers.isEmpty) {
+            return const Center(
+              child: EmptyState(
+                icon: Icons.local_offer_outlined,
+                title: 'No offers nearby yet',
+                message:
+                    'Deals from local shops will appear here as they go live. Check back soon!',
+              ),
+            );
+          }
           final enriched = [
             for (final o in offers)
               (offer: o, matched: _matchedFor(o, items)),

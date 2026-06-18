@@ -6,6 +6,7 @@ import '../models/app_user.dart';
 import '../models/list_item.dart';
 import '../models/offer.dart';
 import '../models/room.dart';
+import '../models/service_models.dart';
 
 /// Typed Firestore wrappers. Widgets never touch FirebaseFirestore directly —
 /// they consume Riverpod providers that route through this service.
@@ -14,13 +15,19 @@ class FirestoreService {
   final FirebaseFirestore _db;
 
   // Users
-  /// Creates `users/{uid}` and seeds a default Family Room with the same set
-  /// of items that ship in MockData['1']. Idempotent: if the user doc already
-  /// exists we do nothing.
+  /// Creates `users/{uid}` and a default empty Family Room for a brand-new
+  /// account. Idempotent: if the user doc already exists we do nothing. The
+  /// display name is captured separately on the set-name screen, so it may be
+  /// empty here (Google sign-in can pre-fill it).
   Future<String?> bootstrapNewUser({
     required String uid,
     required String phone,
-    required List<ListItem> seedItems,
+    String name = '',
+    String? email,
+    String? photoUrl,
+    String locality = '',
+    String city = '',
+    List<ListItem> seedItems = const [],
   }) async {
     final userRef = _db.collection('users').doc(uid);
     final existing = await userRef.get();
@@ -52,10 +59,12 @@ class FirestoreService {
 
     batch.set(userRef, AppUser(
       id: uid,
-      name: 'Friend',
+      name: name,
       phone: phone,
-      locality: 'Chennai',
-      city: 'Chennai',
+      email: email,
+      photoUrl: photoUrl,
+      locality: locality,
+      city: city,
       memberSince: now,
       activeRoomIds: [roomRef.id],
     ).toMap());
@@ -70,8 +79,34 @@ class FirestoreService {
     return AppUser.fromMap(snap.id, snap.data()!);
   }
 
+  Stream<AppUser?> watchUser(String userId) => _db
+      .collection('users')
+      .doc(userId)
+      .snapshots()
+      .map((d) => d.exists ? AppUser.fromMap(d.id, d.data()!) : null);
+
   Future<void> upsertUser(AppUser user) =>
       _db.collection('users').doc(user.id).set(user.toMap(), SetOptions(merge: true));
+
+  /// Updates only the provided profile fields on `users/{uid}`.
+  Future<void> updateUserProfile({
+    required String uid,
+    String? name,
+    String? photoUrl,
+    String? locality,
+    String? city,
+  }) {
+    final updates = <String, dynamic>{
+      if (name != null) 'name': name,
+      if (photoUrl != null) 'photoUrl': photoUrl,
+      if (locality != null) 'locality': locality,
+      if (city != null) 'city': city,
+    };
+    return _db.collection('users').doc(uid).set(
+          updates,
+          SetOptions(merge: true),
+        );
+  }
 
   // Rooms
   Stream<List<Room>> watchRoomsForUser(String userId) => _db
@@ -220,11 +255,15 @@ class FirestoreService {
       .map((s) =>
           s.docs.map((d) => ListItem.fromMap(d.id, d.data())).toList());
 
-  Future<void> addItem(String roomId, ListItem item) => _db
-      .collection('rooms')
-      .doc(roomId)
-      .collection('items')
-      .add(item.toMap());
+  /// Adds an item and returns the new document id.
+  Future<String> addItem(String roomId, ListItem item) async {
+    final ref = await _db
+        .collection('rooms')
+        .doc(roomId)
+        .collection('items')
+        .add(item.toMap());
+    return ref.id;
+  }
 
   Future<void> toggleItemBought({
     required String roomId,
@@ -244,12 +283,58 @@ class FirestoreService {
     });
   }
 
+  /// Updates editable fields on a single item (name, category, quantity, note).
+  /// Only the provided fields are written.
+  Future<void> updateItem({
+    required String roomId,
+    required String itemId,
+    String? name,
+    String? categoryId,
+    String? quantity,
+    String? note,
+  }) {
+    final updates = <String, dynamic>{
+      if (name != null) 'name': name,
+      if (categoryId != null) 'category': categoryId,
+      if (quantity != null) 'quantity': quantity,
+      if (note != null) 'note': note,
+    };
+    return _db
+        .collection('rooms')
+        .doc(roomId)
+        .collection('items')
+        .doc(itemId)
+        .update(updates);
+  }
+
+  Future<void> deleteItem(String roomId, String itemId) => _db
+      .collection('rooms')
+      .doc(roomId)
+      .collection('items')
+      .doc(itemId)
+      .delete();
+
   // Offers
   Stream<List<Offer>> watchActiveOffers() => _db
       .collection('offers')
       .where('active', isEqualTo: true)
       .snapshots()
       .map((s) => s.docs.map((d) => Offer.fromMap(d.id, d.data())).toList());
+
+  // Services catalogue
+  Stream<List<ServiceCategory>> watchServiceCategories() => _db
+      .collection('serviceCategories')
+      .orderBy('order')
+      .snapshots()
+      .map((s) =>
+          s.docs.map((d) => ServiceCategory.fromMap(d.data())).toList());
+
+  Stream<List<ServiceProvider>> watchServiceProviders() => _db
+      .collection('serviceProviders')
+      .orderBy('rating', descending: true)
+      .snapshots()
+      .map((s) =>
+          s.docs.map((d) => ServiceProvider.fromMap(d.id, d.data())).toList());
 }
 
 class _CodeCollision implements Exception {}

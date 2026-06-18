@@ -11,6 +11,8 @@ class ListItem {
   final DateTime? boughtAt;
   final String? boughtBy;
   final num? price;
+  final String? quantity;
+  final String? note;
 
   const ListItem({
     required this.id,
@@ -23,6 +25,8 @@ class ListItem {
     this.boughtAt,
     this.boughtBy,
     this.price,
+    this.quantity,
+    this.note,
   });
 
   factory ListItem.fromMap(String id, Map<String, dynamic> data) => ListItem(
@@ -36,6 +40,8 @@ class ListItem {
         boughtAt: (data['boughtAt'] as Timestamp?)?.toDate(),
         boughtBy: data['boughtBy'] as String?,
         price: data['price'] as num?,
+        quantity: data['quantity'] as String?,
+        note: data['note'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -49,18 +55,24 @@ class ListItem {
             boughtAt == null ? null : Timestamp.fromDate(boughtAt!),
         'boughtBy': boughtBy,
         'price': price,
+        'quantity': quantity,
+        'note': note,
       };
 
   ListItem copyWith({
+    String? name,
+    String? categoryId,
     bool? bought,
     DateTime? boughtAt,
     String? boughtBy,
     num? price,
+    String? quantity,
+    String? note,
   }) =>
       ListItem(
         id: id,
-        name: name,
-        categoryId: categoryId,
+        name: name ?? this.name,
+        categoryId: categoryId ?? this.categoryId,
         addedBy: addedBy,
         addedByName: addedByName,
         addedAt: addedAt,
@@ -68,5 +80,7 @@ class ListItem {
         boughtAt: boughtAt ?? this.boughtAt,
         boughtBy: boughtBy ?? this.boughtBy,
         price: price ?? this.price,
+        quantity: quantity ?? this.quantity,
+        note: note ?? this.note,
       );
 }

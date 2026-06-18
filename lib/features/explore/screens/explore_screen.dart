@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/categories.dart';
 import '../../../core/providers/data_providers.dart';
-import '../../../core/data/mock_data.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../widgets/product_offer_card.dart';
 import '../widgets/service_category_grid.dart';
 import '../widgets/service_provider_tile.dart';
@@ -21,6 +21,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   @override
   Widget build(BuildContext context) {
     final offers = ref.watch(offersProvider).asData?.value ?? const [];
+    final providers =
+        ref.watch(serviceProvidersProvider).asData?.value ?? const [];
+    final locality = ref.watch(currentUserProvider).asData?.value?.locality;
     final filtered = _selCat == 'all'
         ? offers
         : offers.where((o) => o.categoryId == _selCat).toList();
@@ -31,15 +34,18 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 12, 16, 14),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
                 child: Row(
                   children: [
-                    Icon(Icons.location_on_rounded,
+                    const Icon(Icons.location_on_rounded,
                         size: 20, color: AppColors.primary),
-                    SizedBox(width: 6),
-                    Text('Velachery, Chennai',
-                        style: TextStyle(
+                    const SizedBox(width: 6),
+                    Text(
+                        (locality != null && locality.isNotEmpty)
+                            ? locality
+                            : 'Your area',
+                        style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w700)),
                   ],
                 ),
@@ -83,14 +89,26 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                           ),
                         ),
                         Expanded(
-                          child: ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                            itemCount: filtered.length,
-                            itemBuilder: (ctx, i) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: ProductOfferCard(offer: filtered[i]),
-                            ),
-                          ),
+                          child: filtered.isEmpty
+                              ? const Center(
+                                  child: EmptyState(
+                                    icon: Icons.local_offer_outlined,
+                                    title: 'No offers nearby yet',
+                                    message:
+                                        'Deals from local shops will show up here. Check back soon!',
+                                  ),
+                                )
+                              : ListView.builder(
+                                  padding: const EdgeInsets.fromLTRB(
+                                      16, 8, 16, 16),
+                                  itemCount: filtered.length,
+                                  itemBuilder: (ctx, i) => Padding(
+                                    padding:
+                                        const EdgeInsets.only(bottom: 12),
+                                    child:
+                                        ProductOfferCard(offer: filtered[i]),
+                                  ),
+                                ),
                         ),
                       ],
                     ),
@@ -115,43 +133,47 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                         ),
                         const SizedBox(height: 16),
                         const ServiceCategoryGrid(),
-                        const SizedBox(height: 20),
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-                          child: Text('Featured nearby',
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700)),
-                        ),
-                        SizedBox(
-                          height: 210,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
+                        if (offers.isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            child: Text('Featured nearby',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                          SizedBox(
+                            height: 210,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16),
+                              itemCount: offers.length,
+                              itemBuilder: (ctx, i) =>
+                                  ProductOfferCard(offer: offers[i]),
+                            ),
+                          ),
+                        ],
+                        if (providers.isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            child: Text('Top rated services',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                          Padding(
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: offers.length,
-                            itemBuilder: (ctx, i) =>
-                                ProductOfferCard(offer: offers[i]),
+                            child: Column(
+                              children: [
+                                for (final p in providers)
+                                  ServiceProviderTile(provider: p),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-                          child: Text('Top rated services',
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700)),
-                        ),
-                        Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children: [
-                              for (final p in MockData.serviceProviders)
-                                ServiceProviderTile(provider: p),
-                            ],
-                          ),
-                        ),
+                        ],
                       ],
                     ),
                   ],

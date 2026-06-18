@@ -48,7 +48,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           .read(firestoreServiceProvider)
           .createRoom(uid: uid, name: name, emoji: _emoji);
       if (!mounted) return;
-      ref.read(selectedRoomIdProvider.notifier).state = room.id;
+      ref.read(explicitRoomIdProvider.notifier).state = room.id;
       context.go('/home');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

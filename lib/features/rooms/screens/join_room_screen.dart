@@ -49,7 +49,7 @@ class _JoinRoomScreenState extends ConsumerState<JoinRoomScreen> {
         });
         return;
       }
-      ref.read(selectedRoomIdProvider.notifier).state = room.id;
+      ref.read(explicitRoomIdProvider.notifier).state = room.id;
       context.go('/home');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Joined ${room.emoji} ${room.name}')),

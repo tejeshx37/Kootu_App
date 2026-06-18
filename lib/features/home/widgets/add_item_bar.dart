@@ -38,25 +38,41 @@ class _AddItemBarState extends ConsumerState<AddItemBar> {
 
   Future<void> _submit() async {
     final name = _ctrl.text.trim();
-    if (name.isEmpty) return;
-    final cat = Categories.categorizeByKeyword(name);
     final user = FirebaseAuth.instance.currentUser;
+    if (name.isEmpty || user == null || widget.roomId.isEmpty) return;
+
+    // Capture services before any await so they stay usable even if the widget
+    // is disposed while the AI call is in flight.
+    final svc = ref.read(firestoreServiceProvider);
+    final categorizer = ref.read(aiCategorizerProvider);
+
+    // Add instantly with the local keyword guess so the UI never waits.
+    final keywordCat = Categories.categorizeByKeyword(name);
     final item = ListItem(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
-      categoryId: cat.id,
-      addedBy: user?.uid ?? 'me',
+      categoryId: keywordCat.id,
+      addedBy: user.uid,
       addedByName: _displayName(user),
       addedAt: DateTime.now(),
       bought: false,
     );
-    if (user != null) {
-      await ref
-          .read(firestoreServiceProvider)
-          .addItem(widget.roomId, item);
-    }
+
     _ctrl.clear();
     setState(() => _expanded = false);
+
+    final itemId = await svc.addItem(widget.roomId, item);
+
+    // Refine the category with the AI in the background; only write if it
+    // actually differs from the instant guess.
+    final aiCategoryId = await categorizer.categorize(name);
+    if (aiCategoryId != keywordCat.id) {
+      await svc.updateItem(
+        roomId: widget.roomId,
+        itemId: itemId,
+        categoryId: aiCategoryId,
+      );
+    }
   }
 
   @override
