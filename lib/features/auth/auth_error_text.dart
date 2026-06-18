@@ -14,6 +14,13 @@ String authErrorText(Object error) {
         return 'That code expired. Tap resend to get a new one.';
       case 'too-many-requests':
         return 'Too many attempts. Please wait a little and try again.';
+      case 'app-not-authorized':
+      case 'missing-client-identifier':
+        return 'Couldn\'t verify this app on your device. Please try again, '
+            'or use Email / Google to sign in.';
+      case 'web-context-cancelled':
+      case 'web-context-already-presented':
+        return 'Verification was interrupted. Please try sending the code again.';
       case 'invalid-email':
         return 'Please enter a valid email address.';
       case 'email-already-in-use':
@@ -32,7 +39,18 @@ String authErrorText(Object error) {
       case 'account-exists-with-different-credential':
         return 'This email is linked to a different sign-in method.';
       default:
-        return error.message ?? 'Something went wrong. Please try again.';
+        // Play Integrity / device-attestation failures surface under varied
+        // codes (e.g. 17028) with a long raw SDK string. Catch them by content
+        // so we never show the scary "not authorized … play_integrity_token"
+        // text to a user.
+        final msg = error.message ?? '';
+        if (msg.contains('play_integrity') ||
+            msg.contains('not authorized') ||
+            msg.contains('CONFIGURATION_NOT_FOUND')) {
+          return 'Couldn\'t verify this app on your device. Please try again, '
+              'or use Email / Google to sign in.';
+        }
+        return msg.isEmpty ? 'Something went wrong. Please try again.' : msg;
     }
   }
   return 'Something went wrong. Please try again.';
