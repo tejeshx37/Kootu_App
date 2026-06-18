@@ -32,9 +32,8 @@ flutter run -d <android-device>
 
 - Phone-OTP sign-in via `AuthService.verifyPhone` / `signInWithSmsCode`.
 - First sign-in calls `FirestoreService.bootstrapNewUser` which creates
-  `users/{uid}` and seeds one `Family Room` with 6 starter items (same
-  payload as `MockData.itemsByRoom['1']`), so the Home screen renders
-  immediately for brand-new accounts.
+  `users/{uid}` with zero rooms — brand-new accounts start blank and create
+  or join a room explicitly from Home.
 - The router (in `app.dart`) redirects unauthenticated traffic to
   `/onboarding`. Mock data still backs every signed-out preview.
 - `firestore.rules` + `firestore.indexes.json` ship at the repo root.

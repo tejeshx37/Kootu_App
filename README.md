@@ -88,12 +88,62 @@ flutterfire configure --project=<your-firebase-project>
 
 This regenerates `lib/firebase_options.dart` and drops `google-services.json`
 under `android/app/`. In the Firebase console, enable the **Phone**, **Email/
-Password** and **Google** sign-in providers. For phone testing, add a test number
-(e.g. `+91 9999999999` → `123456`). For Google sign-in, register your debug
-SHA-1 (`./gradlew signingReport`) under the Android app.
+Password** and **Google** sign-in providers.
 
 > ℹ️ Firebase Phone Auth requires `minSdkVersion 23` — already set in
 > `android/app/build.gradle.kts`.
+
+#### Production auth setup (required for Phone OTP & Google)
+
+Phone OTP and Google sign-in use Google's **Play Integrity / Android Device
+Verification**. Until your build's signing fingerprints are registered and
+App Check is configured you'll see *"This app is not authorized … Invalid app
+info in play_integrity_token"*. To harden auth for production:
+
+1. **Register signing fingerprints.** Get them with:
+   ```bash
+   cd android && ./gradlew signingReport
+   ```
+   Copy the **SHA-1** and **SHA-256** for the `debug` variant (and later your
+   `release` keystore) → Firebase Console → *Project settings* → the
+   `com.kootu.kootu` Android app → **Add fingerprint**. Then **re-download
+   `google-services.json`** into `android/app/`.
+
+2. **App Check (Play Integrity).** The app already calls
+   `FirebaseAppCheck.instance.activate(...)` in `lib/main.dart` (debug provider
+   in debug builds, Play Integrity in release). Finish the setup:
+   - Enable the **Play Integrity API** in Google Cloud for project `kootuapp`.
+   - Firebase Console → **App Check** → register the Android app with the
+     **Play Integrity** provider.
+   - For emulators, run the app once, copy the printed **App Check debug token**
+     from logcat, and add it under *App Check → app → Manage debug tokens*.
+   - Keep App Check in **monitoring (unenforced)** mode until the Metrics tab
+     shows verified requests, then enable **enforcement** for Authentication to
+     avoid locking yourself out.
+
+3. **Release signing.** `android/app/build.gradle.kts` reads an optional
+   `android/key.properties` (gitignored) and signs release builds with your
+   keystore when present, falling back to debug signing otherwise. Create one:
+   ```bash
+   keytool -genkey -v -keystore ~/kootu-release.jks \
+     -keyalg RSA -keysize 2048 -validity 10000 -alias kootu
+   ```
+   Then add `android/key.properties`:
+   ```properties
+   storeFile=/absolute/path/to/kootu-release.jks
+   storePassword=••••••
+   keyAlias=kootu
+   keyPassword=••••••
+   ```
+   Register the release keystore's SHA-1/256 in Firebase too (step 1).
+
+4. **Unblock dev testing now.** Firebase Console → Authentication → Sign-in
+   method → **Phone** → add a **test number** (e.g. `+91 9042512878` →
+   `123456`). Test numbers skip SMS + integrity entirely, so you can exercise
+   the whole flow while the above propagates.
+
+> 🔒 Never commit `google-services.json`, `key.properties`, or `*.jks` — they
+> are already gitignored.
 
 #### Optional: AI item categorization (Gemini)
 
