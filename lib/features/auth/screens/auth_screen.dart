@@ -20,7 +20,8 @@ class AuthScreen extends ConsumerStatefulWidget {
   ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends ConsumerState<AuthScreen> {
+class _AuthScreenState extends ConsumerState<AuthScreen>
+    with WidgetsBindingObserver {
   final _phoneCtrl = TextEditingController();
   final _otpCtrl = TextEditingController();
   final _otpFocus = FocusNode();
@@ -40,11 +41,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _otpFocus.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _phoneCtrl.dispose();
     _otpCtrl.dispose();
     _otpFocus.dispose();
@@ -52,6 +55,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     _passwordCtrl.dispose();
     _resendTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Coming back from the Messages app (to read/copy the OTP) the input loses
+    // focus and the keyboard stays hidden. Re-focus the field on resume so the
+    // numpad reappears and the user can type or paste straight away.
+    if (state == AppLifecycleState.resumed && _stage == _Stage.otp) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _otpFocus.requestFocus();
+      });
+    }
   }
 
   /// Creates the Firestore user doc the first time we see this account, with
@@ -441,23 +456,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             style: const TextStyle(color: AppColors.lightTextSecondary)),
         const SizedBox(height: 32),
         Stack(
+          alignment: Alignment.center,
           children: [
-            Opacity(
-              opacity: 0,
-              child: TextField(
-                controller: _otpCtrl,
-                focusNode: _otpFocus,
-                keyboardType: TextInputType.number,
-                maxLength: 6,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                onChanged: (v) {
-                  setState(() {});
-                  if (v.length == 6) _verifyOtp();
-                },
-              ),
-            ),
-            GestureDetector(
-              onTap: _otpFocus.requestFocus,
+            // Decorative boxes sit behind and ignore touches so every tap,
+            // long-press and paste gesture lands on the real field on top.
+            IgnorePointer(
               child: ValueListenableBuilder(
                 valueListenable: _otpCtrl,
                 builder: (_, val, __) {
@@ -473,6 +476,37 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         ),
                     ],
                   );
+                },
+              ),
+            ),
+            // The real input overlays the boxes with transparent text/cursor so
+            // native focus, the numpad, long-press paste, and Android's SMS
+            // autofill (oneTimeCode) all work — no GestureDetector intercepting
+            // touches. autofocus brings the keyboard up on entry.
+            SizedBox(
+              height: 58,
+              child: TextField(
+                controller: _otpCtrl,
+                focusNode: _otpFocus,
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                maxLength: 6,
+                showCursor: false,
+                enableInteractiveSelection: true,
+                autofillHints: const [AutofillHints.oneTimeCode],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                style: const TextStyle(color: Colors.transparent),
+                cursorColor: Colors.transparent,
+                decoration: const InputDecoration(
+                  counterText: '',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+                onChanged: (v) {
+                  setState(() {});
+                  if (v.length == 6) _verifyOtp();
                 },
               ),
             ),
