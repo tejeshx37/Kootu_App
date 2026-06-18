@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/categories.dart';
 import '../../../core/providers/data_providers.dart';
+import '../../../core/data/mock_data.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/product_offer_card.dart';
 import '../widgets/service_category_grid.dart';
+import '../widgets/service_provider_tile.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
   const ExploreScreen({super.key});
@@ -130,6 +132,24 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                             itemCount: offers.length,
                             itemBuilder: (ctx, i) =>
                                 ProductOfferCard(offer: offers[i]),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          child: Text('Top rated services',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700)),
+                        ),
+                        Padding(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              for (final p in MockData.serviceProviders)
+                                ServiceProviderTile(provider: p),
+                            ],
                           ),
                         ),
                       ],

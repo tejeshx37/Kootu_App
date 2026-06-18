@@ -260,6 +260,105 @@ class MockData {
     ServiceCategory('More', '➕', 0xFFF3F4F6),
   ];
 
+  static const List<ServiceProvider> serviceProviders = [
+    ServiceProvider(
+      id: 'sp1',
+      name: 'Velachery Home Repairs',
+      category: 'Home Services',
+      emoji: '🛠️',
+      bgArgb: 0xFFFEF3C7,
+      rating: 4.8,
+      reviews: 320,
+      distanceKm: 0.5,
+      priceFrom: 199,
+      tagline: 'Plumbing, electrical & carpentry',
+    ),
+    ServiceProvider(
+      id: 'sp2',
+      name: 'Sparkle Cleaning Co.',
+      category: 'Cleaning',
+      emoji: '🧹',
+      bgArgb: 0xFFDCFCE7,
+      rating: 4.7,
+      reviews: 210,
+      distanceKm: 1.2,
+      priceFrom: 499,
+      tagline: 'Deep home & sofa cleaning',
+    ),
+    ServiceProvider(
+      id: 'sp3',
+      name: 'Dr. Anitha Clinic',
+      category: 'Health',
+      emoji: '🩺',
+      bgArgb: 0xFFFEE2E2,
+      rating: 4.9,
+      reviews: 540,
+      distanceKm: 0.8,
+      priceFrom: 300,
+      tagline: 'General physician · home visits',
+    ),
+    ServiceProvider(
+      id: 'sp4',
+      name: 'GlamUp Salon at Home',
+      category: 'Beauty',
+      emoji: '💅',
+      bgArgb: 0xFFFCE7F3,
+      rating: 4.6,
+      reviews: 180,
+      distanceKm: 1.6,
+      priceFrom: 249,
+      tagline: 'Facial, waxing & bridal makeup',
+    ),
+    ServiceProvider(
+      id: 'sp5',
+      name: 'QuickMove Packers',
+      category: 'Packers & Movers',
+      emoji: '📦',
+      bgArgb: 0xFFFEF3C7,
+      rating: 4.5,
+      reviews: 95,
+      distanceKm: 2.3,
+      priceFrom: 1499,
+      tagline: 'Local & intercity shifting',
+    ),
+    ServiceProvider(
+      id: 'sp6',
+      name: 'Chef Mani Tiffin & Cook',
+      category: 'Food & Cook',
+      emoji: '🍳',
+      bgArgb: 0xFFFEE2E2,
+      rating: 4.7,
+      reviews: 260,
+      distanceKm: 0.9,
+      priceFrom: 350,
+      tagline: 'Daily home-style meals & cooks',
+    ),
+    ServiceProvider(
+      id: 'sp7',
+      name: 'BrightMinds Tutors',
+      category: 'Education',
+      emoji: '📚',
+      bgArgb: 0xFFEDE9FE,
+      rating: 4.8,
+      reviews: 140,
+      distanceKm: 1.1,
+      priceFrom: 600,
+      tagline: 'Maths & science home tuition',
+    ),
+    ServiceProvider(
+      id: 'sp8',
+      name: 'FixIt Appliance Care',
+      category: 'Repairs',
+      emoji: '🔧',
+      bgArgb: 0xFFCFFAFE,
+      rating: 4.4,
+      reviews: 175,
+      distanceKm: 1.9,
+      priceFrom: 149,
+      tagline: 'AC, fridge & washing machine',
+    ),
+  ];
+
   static ListItem _item(
     String id,
     String name,
@@ -296,4 +395,29 @@ class ServiceCategory {
   final String emoji;
   final int bgArgb;
   const ServiceCategory(this.label, this.emoji, this.bgArgb);
+}
+
+class ServiceProvider {
+  final String id;
+  final String name;
+  final String category;
+  final String emoji;
+  final int bgArgb;
+  final double rating;
+  final int reviews;
+  final double distanceKm;
+  final int priceFrom;
+  final String tagline;
+  const ServiceProvider({
+    required this.id,
+    required this.name,
+    required this.category,
+    required this.emoji,
+    required this.bgArgb,
+    required this.rating,
+    required this.reviews,
+    required this.distanceKm,
+    required this.priceFrom,
+    required this.tagline,
+  });
 }
