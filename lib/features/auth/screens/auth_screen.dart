@@ -57,16 +57,25 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   /// Creates the Firestore user doc the first time we see this account, with
   /// zero rooms. The display name is captured afterwards on the set-name
   /// screen.
+  ///
+  /// Sign-in itself already succeeded by the time this runs, so a Firestore
+  /// failure here (e.g. the device has no network) must not be reported as
+  /// an auth error — the router retries the user-doc read once connectivity
+  /// returns, since `currentUserProvider` is a live stream.
   Future<void> _bootstrapIfNew(UserCredential cred) async {
     final user = cred.user;
     if (cred.additionalUserInfo?.isNewUser != true || user == null) return;
-    await ref.read(firestoreServiceProvider).bootstrapNewUser(
-          uid: user.uid,
-          phone: user.phoneNumber ?? '',
-          name: user.displayName ?? '',
-          email: user.email,
-          photoUrl: user.photoURL,
-        );
+    try {
+      await ref.read(firestoreServiceProvider).bootstrapNewUser(
+            uid: user.uid,
+            phone: user.phoneNumber ?? '',
+            name: user.displayName ?? '',
+            email: user.email,
+            photoUrl: user.photoURL,
+          );
+    } catch (e) {
+      debugPrint('bootstrapNewUser failed (will retry via live stream): $e');
+    }
   }
 
   // ---- Phone ----
