@@ -15,11 +15,12 @@ class FirestoreService {
   final FirebaseFirestore _db;
 
   // Users
-  /// Creates `users/{uid}` and a default empty Family Room for a brand-new
-  /// account. Idempotent: if the user doc already exists we do nothing. The
-  /// display name is captured separately on the set-name screen, so it may be
-  /// empty here (Google sign-in can pre-fill it).
-  Future<String?> bootstrapNewUser({
+  /// Creates `users/{uid}` for a brand-new account. Idempotent: if the user
+  /// doc already exists we do nothing. New accounts start with zero rooms —
+  /// the user creates or joins one explicitly from Home. The display name is
+  /// captured separately on the set-name screen, so it may be empty here
+  /// (Google sign-in can pre-fill it).
+  Future<void> bootstrapNewUser({
     required String uid,
     required String phone,
     String name = '',
@@ -27,37 +28,12 @@ class FirestoreService {
     String? photoUrl,
     String locality = '',
     String city = '',
-    List<ListItem> seedItems = const [],
   }) async {
     final userRef = _db.collection('users').doc(uid);
     final existing = await userRef.get();
-    if (existing.exists) return null;
+    if (existing.exists) return;
 
-    final roomRef = _db.collection('rooms').doc();
-    final now = DateTime.now();
-    final inviteCode = await _reserveInviteCode(roomRef.id, uid);
-    final batch = _db.batch();
-
-    batch.set(roomRef, {
-      'name': 'Family Room',
-      'emoji': '🏠',
-      'createdBy': uid,
-      'memberIds': [uid],
-      'memberAvatars': const ['👤'],
-      'createdAt': Timestamp.fromDate(now),
-      'itemCount': seedItems.length,
-      'neededCount': seedItems.where((i) => !i.bought).length,
-      'inviteCode': inviteCode,
-    });
-
-    for (final item in seedItems) {
-      final itemRef = roomRef.collection('items').doc();
-      final map = item.toMap();
-      map['addedBy'] = uid;
-      batch.set(itemRef, map);
-    }
-
-    batch.set(userRef, AppUser(
+    await userRef.set(AppUser(
       id: uid,
       name: name,
       phone: phone,
@@ -65,12 +41,9 @@ class FirestoreService {
       photoUrl: photoUrl,
       locality: locality,
       city: city,
-      memberSince: now,
-      activeRoomIds: [roomRef.id],
+      memberSince: DateTime.now(),
+      activeRoomIds: const [],
     ).toMap());
-
-    await batch.commit();
-    return roomRef.id;
   }
 
   Future<AppUser?> getUser(String userId) async {

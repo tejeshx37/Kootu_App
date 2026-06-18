@@ -54,8 +54,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     super.dispose();
   }
 
-  /// Creates the Firestore user doc + default room the first time we see this
-  /// account. The display name is captured afterwards on the set-name screen.
+  /// Creates the Firestore user doc the first time we see this account, with
+  /// zero rooms. The display name is captured afterwards on the set-name
+  /// screen.
   Future<void> _bootstrapIfNew(UserCredential cred) async {
     final user = cred.user;
     if (cred.additionalUserInfo?.isNewUser != true || user == null) return;
