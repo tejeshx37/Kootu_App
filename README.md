@@ -96,18 +96,29 @@ Password** and **Google** sign-in providers.
 #### Production auth setup (required for Phone OTP & Google)
 
 Phone OTP and Google sign-in use Google's **Play Integrity / Android Device
-Verification**. Until your build's signing fingerprints are registered and
-App Check is configured you'll see *"This app is not authorized … Invalid app
-info in play_integrity_token"*. To harden auth for production:
+Verification**. This **cannot be satisfied from app code** — it requires the
+Firebase Console steps below **and a real physical device with Google Play**.
+On emulators Play Integrity often returns *17028 Invalid app info in
+play_integrity_token* and Firebase falls back to a reCAPTCHA web page (itself
+unreliable in partitioned-storage Custom Tabs — *"Unable to process request due
+to missing initial state"*). **Use a test phone number on the emulator (step 4)
+and a real device for true attestation.**
 
 1. **Register signing fingerprints.** Get them with:
    ```bash
    cd android && ./gradlew signingReport
    ```
-   Copy the **SHA-1** and **SHA-256** for the `debug` variant (and later your
-   `release` keystore) → Firebase Console → *Project settings* → the
+   Copy **both** the **SHA-1** and **SHA-256** for the `debug` variant (and later
+   your `release` keystore) → Firebase Console → *Project settings* → the
    `com.kootu.kootu` Android app → **Add fingerprint**. Then **re-download
-   `google-services.json`** into `android/app/`.
+   `google-services.json`** into `android/app/`. Both SHAs are required — a
+   missing SHA-256 is the usual cause of *Invalid app info*.
+
+   > Confirm the file matches the Dart config — both must agree:
+   > ```bash
+   > grep project_number android/app/google-services.json   # 1031395777844
+   > ```
+   > It must equal `messagingSenderId` in `lib/firebase_options.dart`.
 
 2. **App Check (Play Integrity).** The app already calls
    `FirebaseAppCheck.instance.activate(...)` in `lib/main.dart` (debug provider
@@ -115,8 +126,10 @@ info in play_integrity_token"*. To harden auth for production:
    - Enable the **Play Integrity API** in Google Cloud for project `kootuapp`.
    - Firebase Console → **App Check** → register the Android app with the
      **Play Integrity** provider.
-   - For emulators, run the app once, copy the printed **App Check debug token**
-     from logcat, and add it under *App Check → app → Manage debug tokens*.
+   - For emulators/debug builds, run the app once and copy the printed token:
+     `DebugAppCheckProvider: Enter this debug secret … <UUID>` → add it under
+     *App Check → app → Manage debug tokens*. Otherwise you'll see
+     `App attestation failed (403)`.
    - Keep App Check in **monitoring (unenforced)** mode until the Metrics tab
      shows verified requests, then enable **enforcement** for Authentication to
      avoid locking yourself out.
