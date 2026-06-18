@@ -87,11 +87,22 @@ flutterfire configure --project=<your-firebase-project>
 ```
 
 This regenerates `lib/firebase_options.dart` and drops `google-services.json`
-under `android/app/`. In the Firebase console, enable **Phone** sign-in and add a
-test number (e.g. `+91 9999999999` → `123456`) for local development.
+under `android/app/`. In the Firebase console, enable the **Phone**, **Email/
+Password** and **Google** sign-in providers. For phone testing, add a test number
+(e.g. `+91 9999999999` → `123456`). For Google sign-in, register your debug
+SHA-1 (`./gradlew signingReport`) under the Android app.
 
 > ℹ️ Firebase Phone Auth requires `minSdkVersion 23` — already set in
 > `android/app/build.gradle.kts`.
+
+#### Optional: AI item categorization (Gemini)
+
+New list items are auto-categorized. Without a key the app uses a built-in
+keyword matcher; provide a Gemini API key to upgrade to AI categorization:
+
+```bash
+flutter run --dart-define=GEMINI_API_KEY=your_key_here
+```
 
 ### 3. Deploy Firestore rules & indexes
 
@@ -109,9 +120,15 @@ flutter run -d <android-device>
 ```
 
 New accounts are bootstrapped automatically: the first sign-in creates the user
-document and seeds a starter **Family Room** so the Home screen renders
-immediately. When Firestore has no data yet, providers fall back to local mock
-fixtures so no screen is ever blank.
+document and an empty **Family Room**, then the user is asked for their name (and
+locality) before reaching Home. All data is real Firestore data — when a
+collection is empty the relevant screen shows a friendly empty state rather than
+placeholder content.
+
+The **Offers**, **Explore → Products** and **Explore → Services** screens read
+from the `offers`, `serviceCategories` and `serviceProviders` collections. These
+are curated server-side (Firebase console / Admin SDK) and are read-only to
+clients; until you populate them, those screens show empty states.
 
 ## Project structure
 
@@ -122,8 +139,8 @@ lib/
   core/
     theme/               # design tokens, ColorScheme, TextTheme, shadows
     constants/           # categories + keyword auto-categorizer
-    models/              # Room, ListItem, Offer, AppUser
-    services/            # AuthService, FirestoreService (all Firestore I/O)
+    models/              # Room, ListItem, Offer, AppUser, service models
+    services/            # Auth, Firestore, Storage, AI categorizer
     providers/           # Riverpod providers (theme / auth / data)
     data/                # mock fixtures (seed + offline fallback)
   features/

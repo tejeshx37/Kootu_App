@@ -86,7 +86,7 @@ class RoomSwitcher extends ConsumerWidget {
                     subtitle: Text(
                         '${r.memberIds.length} members · ${r.neededCount} needed'),
                     onTap: () {
-                      ref.read(selectedRoomIdProvider.notifier).state = r.id;
+                      ref.read(explicitRoomIdProvider.notifier).state = r.id;
                       Navigator.pop(sheetCtx);
                     },
                   ),

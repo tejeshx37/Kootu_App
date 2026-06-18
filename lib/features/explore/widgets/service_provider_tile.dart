@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/data/mock_data.dart';
+import '../../../core/models/service_models.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// A single "top rated service" row: provider avatar, name, tagline, rating
