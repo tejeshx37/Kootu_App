@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../constants/categories.dart';
@@ -13,7 +14,12 @@ class AiCategorizer {
   AiCategorizer({http.Client? client, String? apiKey})
       : _client = client ?? http.Client(),
         _apiKey = apiKey ??
-            const String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+            const String.fromEnvironment('GEMINI_API_KEY', defaultValue: '') {
+    // One-time visibility into whether the build picked up the key. Never
+    // prints the key itself — only whether it's present and its length.
+    debugPrint('[Gemini] isConfigured=${_apiKey.isNotEmpty}, '
+        'keyLen=${_apiKey.length}');
+  }
 
   final http.Client _client;
   final String _apiKey;
@@ -26,7 +32,11 @@ class AiCategorizer {
   /// Returns a valid category id. Never throws.
   Future<String> categorize(String itemName) async {
     final fallback = Categories.categorizeByKeyword(itemName).id;
-    if (!isConfigured || itemName.trim().isEmpty) return fallback;
+    if (itemName.trim().isEmpty) return fallback;
+    if (!isConfigured) {
+      debugPrint('[Gemini] no key — keyword fallback "$itemName" → $fallback');
+      return fallback;
+    }
 
     try {
       final ids = Categories.all.map((c) => c.id).join(', ');
@@ -60,7 +70,11 @@ class AiCategorizer {
           )
           .timeout(_timeout);
 
-      if (resp.statusCode != 200) return fallback;
+      if (resp.statusCode != 200) {
+        debugPrint('[Gemini] HTTP ${resp.statusCode} for "$itemName" — '
+            'fallback $fallback. Body: ${resp.body.substring(0, resp.body.length.clamp(0, 200))}');
+        return fallback;
+      }
       final body = jsonDecode(resp.body) as Map<String, dynamic>;
       final candidates = body['candidates'] as List?;
       if (candidates == null || candidates.isEmpty) return fallback;
@@ -68,6 +82,7 @@ class AiCategorizer {
       if (parts == null || parts.isEmpty) return fallback;
       final text = (parts.first as Map?)?['text'] as String?;
       if (text == null) return fallback;
+      debugPrint('[Gemini] "$itemName" → raw reply: ${text.trim()}');
 
       final guess = text.trim().toLowerCase();
       // Match by exact id, id contained, or the human label — so replies like
@@ -83,8 +98,10 @@ class AiCategorizer {
       }
       return guess.contains('other') ? 'other' : fallback;
     } on TimeoutException {
+      debugPrint('[Gemini] timeout for "$itemName" — fallback $fallback');
       return fallback;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[Gemini] error for "$itemName": $e — fallback $fallback');
       return fallback;
     }
   }
