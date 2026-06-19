@@ -1,8 +1,5 @@
-import 'dart:async';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/auth_provider.dart';
@@ -10,162 +7,52 @@ import '../../../core/providers/data_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../auth_error_text.dart';
 
-enum _Method { phone, email }
-
-enum _Stage { entry, otp, verifying, done }
-
+/// Sign-in screen: Email/Password as primary, Google as a one-tap alternative.
+///
+/// Phone OTP was intentionally removed for v1. Sending SMS to Indian numbers
+/// requires TRAI/DLT registration (entity, header, template — 1–7 day
+/// approval), which we're deferring. The backend OTP path lives in
+/// `functions/{send,verify}Otp` and can be re-enabled later by re-adding the
+/// phone tab here.
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
   @override
   ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends ConsumerState<AuthScreen>
-    with WidgetsBindingObserver {
-  final _phoneCtrl = TextEditingController();
-  final _otpCtrl = TextEditingController();
-  final _otpFocus = FocusNode();
+class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
 
-  _Method _method = _Method.phone;
-  _Stage _stage = _Stage.entry;
   bool _emailRegister = false;
   bool _busy = false;
-
-  int _resend = 29;
-  Timer? _resendTimer;
   String? _error;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _otpFocus.addListener(() => setState(() {}));
-  }
-
-  @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _phoneCtrl.dispose();
-    _otpCtrl.dispose();
-    _otpFocus.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
-    _resendTimer?.cancel();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Coming back from the Messages app (to read/copy the OTP) the input loses
-    // focus and the keyboard stays hidden. Re-focus the field on resume so the
-    // numpad reappears and the user can type or paste straight away.
-    if (state == AppLifecycleState.resumed && _stage == _Stage.otp) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _otpFocus.requestFocus();
-      });
-    }
   }
 
   /// Creates the Firestore user doc the first time we see this account, with
   /// zero rooms. The display name is captured afterwards on the set-name
-  /// screen.
-  ///
-  /// Sign-in itself already succeeded by the time this runs, so a Firestore
-  /// failure here (e.g. the device has no network) must not be reported as
-  /// an auth error — the router retries the user-doc read once connectivity
-  /// returns, since `currentUserProvider` is a live stream.
-  Future<void> _bootstrapIfNew(UserCredential cred, {String? phoneOverride}) async {
+  /// screen. Wrapped so a transient Firestore failure here doesn't get
+  /// surfaced as an auth error — `currentUserProvider` is a live stream and
+  /// will pick up the doc once connectivity returns.
+  Future<void> _bootstrapIfNew(UserCredential cred) async {
     final user = cred.user;
-    if (user == null) return;
-    // Email / Google report isNewUser. Phone uses a custom token where
-    // additionalUserInfo can be null and user.phoneNumber is empty, so when a
-    // phoneOverride is supplied we always call the (idempotent) bootstrap.
-    final isNew = cred.additionalUserInfo?.isNewUser == true;
-    if (!isNew && phoneOverride == null) return;
+    if (cred.additionalUserInfo?.isNewUser != true || user == null) return;
     try {
       await ref.read(firestoreServiceProvider).bootstrapNewUser(
             uid: user.uid,
-            phone: phoneOverride ?? user.phoneNumber ?? '',
+            phone: user.phoneNumber ?? '',
             name: user.displayName ?? '',
             email: user.email,
             photoUrl: user.photoURL,
           );
     } catch (e) {
       debugPrint('bootstrapNewUser failed (will retry via live stream): $e');
-    }
-  }
-
-  // ---- Phone ----
-  String get _phoneE164 => '+91${_phoneCtrl.text.trim()}';
-
-  Future<void> _sendCode() async {
-    if (_phoneCtrl.text.trim().length != 10) {
-      setState(() => _error = 'Enter a 10-digit phone number');
-      return;
-    }
-    final svc = ref.read(authServiceProvider);
-    if (svc == null) {
-      setState(() => _error = 'Firebase not configured — run flutterfire configure.');
-      return;
-    }
-    setState(() {
-      _error = null;
-      _busy = true;
-    });
-    try {
-      await svc.sendPhoneOtp(_phoneE164);
-      setState(() {
-        _stage = _Stage.otp;
-        _resend = 29;
-        _busy = false;
-      });
-      _startResendTimer();
-      _otpCtrl.clear();
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _otpFocus.requestFocus());
-    } catch (e) {
-      setState(() {
-        _error = authErrorText(e);
-        _busy = false;
-      });
-    }
-  }
-
-  void _startResendTimer() {
-    _resendTimer?.cancel();
-    _resendTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (_resend <= 0) {
-        t.cancel();
-      } else {
-        setState(() => _resend--);
-      }
-    });
-  }
-
-  Future<void> _verifyOtp() async {
-    final code = _otpCtrl.text.trim();
-    if (code.length != 6) return;
-    final svc = ref.read(authServiceProvider);
-    if (svc == null) {
-      setState(() => _error = 'Firebase not configured.');
-      return;
-    }
-    setState(() => _stage = _Stage.verifying);
-    try {
-      final cred = await svc.signInWithPhoneOtp(
-        phoneE164: _phoneE164,
-        code: code,
-      );
-      await _bootstrapIfNew(cred, phoneOverride: _phoneE164);
-      setState(() => _stage = _Stage.done);
-      // Router redirect handles navigation (to set-name or home).
-    } catch (e) {
-      setState(() {
-        _stage = _Stage.otp;
-        _error = authErrorText(e);
-      });
     }
   }
 
@@ -252,140 +139,69 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: _stage == _Stage.otp
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => setState(() {
-                  _stage = _Stage.entry;
-                  _error = null;
-                }),
-              )
-            : null,
-      ),
+      appBar: AppBar(),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: switch (_stage) {
-          _Stage.entry => _entryStage(),
-          _Stage.otp => _otpStage(),
-          _Stage.verifying => _verifyingStage(),
-          _Stage.done => _verifyingStage(done: true),
-        },
-      ),
-    );
-  }
-
-  Widget _entryStage() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 24),
-          const Text('Welcome to Kootu',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 6),
-          const Text('Sign in or create your account to start sharing lists.',
-              style: TextStyle(color: AppColors.lightTextSecondary)),
-          const SizedBox(height: 24),
-          SegmentedButton<_Method>(
-            segments: const [
-              ButtonSegment(
-                  value: _Method.phone,
-                  icon: Icon(Icons.smartphone_rounded),
-                  label: Text('Phone')),
-              ButtonSegment(
-                  value: _Method.email,
-                  icon: Icon(Icons.alternate_email_rounded),
-                  label: Text('Email')),
-            ],
-            selected: {_method},
-            onSelectionChanged: (s) => setState(() {
-              _method = s.first;
-              _error = null;
-            }),
-          ),
-          const SizedBox(height: 24),
-          if (_method == _Method.phone) _phoneForm() else _emailForm(),
-          if (_error != null) ...[
-            const SizedBox(height: 12),
-            Text(_error!,
-                style: const TextStyle(color: AppColors.error, fontSize: 12)),
-          ],
-          const SizedBox(height: 20),
-          Row(
-            children: const [
-              Expanded(child: Divider()),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('or', style: TextStyle(color: AppColors.lightTextSecondary)),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 24),
+              const Text(
+                'Welcome to Kootu',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
               ),
-              Expanded(child: Divider()),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _busy ? null : _googleSignIn,
-              icon: const Text('G',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w800, color: AppColors.primary)),
-              label: const Text('Continue with Google'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
+              const SizedBox(height: 6),
+              const Text(
+                'Sign in or create your account to start sharing lists.',
+                style: TextStyle(color: AppColors.lightTextSecondary),
               ),
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _phoneForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-              decoration: BoxDecoration(
-                color: AppColors.lightInputBg,
-                borderRadius: BorderRadius.circular(AppRadii.xs),
-              ),
-              child: const Text('🇮🇳 +91',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: _phoneCtrl,
-                keyboardType: TextInputType.phone,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(10),
+              const SizedBox(height: 28),
+              _emailForm(),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _error!,
+                  style: const TextStyle(color: AppColors.error, fontSize: 12),
+                ),
+              ],
+              const SizedBox(height: 20),
+              Row(
+                children: const [
+                  Expanded(child: Divider()),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      'or',
+                      style: TextStyle(color: AppColors.lightTextSecondary),
+                    ),
+                  ),
+                  Expanded(child: Divider()),
                 ],
-                decoration: const InputDecoration(hintText: 'Phone number'),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _busy ? null : _sendCode,
-            child: _busy
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Send code'),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _busy ? null : _googleSignIn,
+                  icon: const Text(
+                    'G',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  label: const Text('Continue with Google'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -420,9 +236,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                 _emailRegister = !_emailRegister;
                 _error = null;
               }),
-              child: Text(_emailRegister
-                  ? 'Have an account? Sign in'
-                  : 'New here? Create account'),
+              child: Text(
+                _emailRegister
+                    ? 'Have an account? Sign in'
+                    : 'New here? Create account',
+              ),
             ),
             if (!_emailRegister)
               TextButton(
@@ -440,172 +258,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                 ? const SizedBox(
                     height: 18,
                     width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2))
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : Text(_emailRegister ? 'Create account' : 'Sign in'),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _otpStage() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 16),
-        const Text('Enter the 6-digit code',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 4),
-        Text('Sent to +91 ${_phoneCtrl.text}',
-            style: const TextStyle(color: AppColors.lightTextSecondary)),
-        const SizedBox(height: 32),
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            // Decorative boxes sit behind and ignore touches so every tap,
-            // long-press and paste gesture lands on the real field on top.
-            IgnorePointer(
-              child: ValueListenableBuilder(
-                valueListenable: _otpCtrl,
-                builder: (_, val, __) {
-                  final code = val.text;
-                  final hasFocus = _otpFocus.hasFocus;
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      for (var i = 0; i < 6; i++)
-                        _OtpBox(
-                          digit: i < code.length ? code[i] : null,
-                          isActive: hasFocus && i == code.length.clamp(0, 5),
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            // The real input overlays the boxes with transparent text/cursor so
-            // native focus, the numpad, long-press paste, and Android's SMS
-            // autofill (oneTimeCode) all work — no GestureDetector intercepting
-            // touches. autofocus brings the keyboard up on entry.
-            SizedBox(
-              height: 58,
-              child: TextField(
-                controller: _otpCtrl,
-                focusNode: _otpFocus,
-                autofocus: true,
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.done,
-                maxLength: 6,
-                showCursor: false,
-                enableInteractiveSelection: true,
-                autofillHints: const [AutofillHints.oneTimeCode],
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                style: const TextStyle(color: Colors.transparent),
-                cursorColor: Colors.transparent,
-                decoration: const InputDecoration(
-                  counterText: '',
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                ),
-                onChanged: (v) {
-                  setState(() {});
-                  if (v.length == 6) _verifyOtp();
-                },
-              ),
-            ),
-          ],
-        ),
-        if (_error != null) ...[
-          const SizedBox(height: 12),
-          Text(_error!,
-              style: const TextStyle(color: AppColors.error, fontSize: 12)),
-        ],
-        const SizedBox(height: 20),
-        Center(
-          child: _resend > 0
-              ? Text('Resend in ${_resend}s',
-                  style: const TextStyle(color: AppColors.lightTextSecondary))
-              : TextButton(
-                  onPressed: _sendCode,
-                  child: const Text('Resend code'),
-                ),
-        ),
-        const Spacer(),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _verifyOtp,
-            child: const Text('Verify'),
-          ),
-        ),
-        const SizedBox(height: 24),
-      ],
-    );
-  }
-
-  Widget _verifyingStage({bool done = false}) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          done
-              ? const Icon(Icons.check_circle,
-                  color: AppColors.success, size: 64)
-              : const CircularProgressIndicator(),
-          const SizedBox(height: 16),
-          Text(done ? 'Verified!' : 'Verifying…'),
-        ],
-      ),
-    );
-  }
-}
-
-class _OtpBox extends StatelessWidget {
-  const _OtpBox({required this.digit, required this.isActive});
-  final String? digit;
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final filled = digit != null;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
-      width: 46,
-      height: 58,
-      decoration: BoxDecoration(
-        color: filled
-            ? AppColors.primary.withValues(alpha: 0.12)
-            : scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(
-          color: isActive
-              ? AppColors.primary
-              : filled
-                  ? AppColors.primary.withValues(alpha: 0.5)
-                  : scheme.outline,
-          width: isActive ? 2 : 1.5,
-        ),
-      ),
-      child: Center(
-        child: filled
-            ? Text(
-                digit!,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
-                ),
-              )
-            : isActive
-                ? Container(
-                    width: 2,
-                    height: 24,
-                    color: AppColors.primary,
-                  )
-                : null,
-      ),
     );
   }
 }

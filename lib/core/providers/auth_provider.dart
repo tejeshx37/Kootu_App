@@ -1,4 +1,3 @@
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,7 +14,7 @@ final firebaseAuthProvider = Provider<FirebaseAuth?>((ref) {
 final authServiceProvider = Provider<AuthService?>((ref) {
   final auth = ref.watch(firebaseAuthProvider);
   if (auth == null) return null;
-  return AuthService(auth, FirebaseFunctions.instance);
+  return AuthService(auth);
 });
 
 final authStateProvider = StreamProvider<User?>((ref) {

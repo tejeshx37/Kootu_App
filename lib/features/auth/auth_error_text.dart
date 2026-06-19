@@ -1,15 +1,8 @@
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 /// Maps Firebase auth error codes to friendly, user-facing messages so we never
 /// surface raw SDK strings.
 String authErrorText(Object error) {
-  // Phone OTP errors come from our Cloud Functions as FirebaseFunctionsException.
-  // Their `message` is already a friendly HttpsError string we set server-side.
-  if (error is FirebaseFunctionsException) {
-    final msg = error.message ?? '';
-    return msg.isEmpty ? 'Something went wrong. Please try again.' : msg;
-  }
   if (error is FirebaseAuthException) {
     switch (error.code) {
       case 'invalid-phone-number':
@@ -21,13 +14,6 @@ String authErrorText(Object error) {
         return 'That code expired. Tap resend to get a new one.';
       case 'too-many-requests':
         return 'Too many attempts. Please wait a little and try again.';
-      case 'app-not-authorized':
-      case 'missing-client-identifier':
-        return 'Couldn\'t verify this app on your device. Please try again, '
-            'or use Email / Google to sign in.';
-      case 'web-context-cancelled':
-      case 'web-context-already-presented':
-        return 'Verification was interrupted. Please try sending the code again.';
       case 'invalid-email':
         return 'Please enter a valid email address.';
       case 'email-already-in-use':

@@ -43,8 +43,9 @@ become a deal at the shop down the road.
 - 📓 **Notebook UI** — the home list is styled as a ruled notebook page, so adding
   items feels like writing your shopping list by hand.
 - 🌗 **Dark mode** — full light/dark theming, persisted across launches.
-- 📱 **Phone-OTP auth** — passwordless sign-in via a custom OTP backend (MSG91
-  SMS + a Firebase custom token), plus Email/Password and Google sign-in.
+- 🔐 **Auth** — Email/Password + one-tap Google sign-in. (A serverless phone-OTP
+  backend ships in [`functions/`](functions/) for future re-enable once DLT
+  registration is in place — see "Phone OTP backend".)
 
 ## Tech stack
 
@@ -94,11 +95,19 @@ Password** and **Google** sign-in providers.
 > ℹ️ Firebase Phone Auth requires `minSdkVersion 23` — already set in
 > `android/app/build.gradle.kts`.
 
-#### Phone OTP backend (MSG91 + Cloud Functions)
+#### Phone OTP backend (MSG91 + Cloud Functions) — _not wired in v1_
 
-Phone OTP does **not** use Firebase's client-side phone auth (that relies on
-Play Integrity, which rejects unpublished/sideloaded builds with *"app not
-Recognized by Play Store"* and falls back to a flaky reCAPTCHA web page).
+> Phone OTP is **not** exposed in the v1 sign-in screen. Sending SMS to Indian
+> numbers requires TRAI/DLT registration (entity, header, content template),
+> and that's deferred. The backend below ships ready-to-deploy; to turn it on,
+> add `cloud_functions` to `pubspec.yaml`, restore the `sendPhoneOtp` /
+> `signInWithPhoneOtp` methods on `AuthService` (see git history), and re-add a
+> phone tab to `AuthScreen`. Until DLT is approved, Email + Google are the
+> shipping sign-in methods.
+
+The design avoids Firebase's client-side phone auth (which relies on Play
+Integrity, rejecting unpublished/sideloaded builds with *"app not Recognized
+by Play Store"* and falling back to a flaky reCAPTCHA web page).
 Instead Kootu owns the OTP via two Cloud Functions in [`functions/`](functions/):
 
 - `sendOtp(phone)` — generates a 6-digit code, stores a salted HMAC in

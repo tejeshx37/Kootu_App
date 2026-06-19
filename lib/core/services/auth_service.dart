@@ -1,40 +1,18 @@
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+/// Email/Password + Google sign-in.
+///
+/// Phone OTP intentionally left out for v1 — the SMS path requires DLT
+/// registration in India. The serverless OTP backend (`functions/sendOtp`,
+/// `functions/verifyOtp`) is still deployed and ready; to re-enable, add a
+/// `FirebaseFunctions` dependency here and wrap the two callables.
 class AuthService {
-  AuthService(this._auth, this._functions);
+  AuthService(this._auth);
   final FirebaseAuth _auth;
-  final FirebaseFunctions _functions;
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
-
-  // ---- Phone OTP (custom backend over MSG91) ----
-  // Phone auth no longer uses Firebase's Play-Integrity-gated client flow.
-  // Instead a Cloud Function generates + SMSes the code (via MSG91); a second
-  // function verifies it and returns a Firebase custom token we sign in with.
-  // This works on any build (incl. unpublished debug) with no reCAPTCHA.
-
-  /// Asks the backend to text a 6-digit code to [phoneE164] (E.164, e.g.
-  /// +919042512878). Throws [FirebaseFunctionsException] with a friendly
-  /// message on failure (rate limit, send error, bad number).
-  Future<void> sendPhoneOtp(String phoneE164) async {
-    await _functions.httpsCallable('sendOtp').call({'phone': phoneE164});
-  }
-
-  /// Verifies [code] for [phoneE164]; on success exchanges the returned custom
-  /// token for a real Firebase session.
-  Future<UserCredential> signInWithPhoneOtp({
-    required String phoneE164,
-    required String code,
-  }) async {
-    final res = await _functions
-        .httpsCallable('verifyOtp')
-        .call({'phone': phoneE164, 'code': code});
-    final token = (res.data as Map)['token'] as String;
-    return _auth.signInWithCustomToken(token);
-  }
 
   // Email / password
   Future<UserCredential> registerWithEmail({
