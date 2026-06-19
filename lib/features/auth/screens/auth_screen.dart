@@ -33,7 +33,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   bool _emailRegister = false;
   bool _busy = false;
 
-  String? _verificationId;
   int _resend = 29;
   Timer? _resendTimer;
   String? _error;
@@ -77,13 +76,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   /// failure here (e.g. the device has no network) must not be reported as
   /// an auth error — the router retries the user-doc read once connectivity
   /// returns, since `currentUserProvider` is a live stream.
-  Future<void> _bootstrapIfNew(UserCredential cred) async {
+  Future<void> _bootstrapIfNew(UserCredential cred, {String? phoneOverride}) async {
     final user = cred.user;
-    if (cred.additionalUserInfo?.isNewUser != true || user == null) return;
+    if (user == null) return;
+    // Email / Google report isNewUser. Phone uses a custom token where
+    // additionalUserInfo can be null and user.phoneNumber is empty, so when a
+    // phoneOverride is supplied we always call the (idempotent) bootstrap.
+    final isNew = cred.additionalUserInfo?.isNewUser == true;
+    if (!isNew && phoneOverride == null) return;
     try {
       await ref.read(firestoreServiceProvider).bootstrapNewUser(
             uid: user.uid,
-            phone: user.phoneNumber ?? '',
+            phone: phoneOverride ?? user.phoneNumber ?? '',
             name: user.displayName ?? '',
             email: user.email,
             photoUrl: user.photoURL,
@@ -94,6 +98,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   }
 
   // ---- Phone ----
+  String get _phoneE164 => '+91${_phoneCtrl.text.trim()}';
+
   Future<void> _sendCode() async {
     if (_phoneCtrl.text.trim().length != 10) {
       setState(() => _error = 'Enter a 10-digit phone number');
@@ -108,25 +114,23 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       _error = null;
       _busy = true;
     });
-    await svc.verifyPhone(
-      phoneE164: '+91${_phoneCtrl.text.trim()}',
-      codeSent: (id, _) {
-        setState(() {
-          _verificationId = id;
-          _stage = _Stage.otp;
-          _resend = 29;
-          _busy = false;
-        });
-        _startResendTimer();
-        _otpCtrl.clear();
-        WidgetsBinding.instance
-            .addPostFrameCallback((_) => _otpFocus.requestFocus());
-      },
-      onError: (e) => setState(() {
+    try {
+      await svc.sendPhoneOtp(_phoneE164);
+      setState(() {
+        _stage = _Stage.otp;
+        _resend = 29;
+        _busy = false;
+      });
+      _startResendTimer();
+      _otpCtrl.clear();
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _otpFocus.requestFocus());
+    } catch (e) {
+      setState(() {
         _error = authErrorText(e);
         _busy = false;
-      }),
-    );
+      });
+    }
   }
 
   void _startResendTimer() {
@@ -142,7 +146,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
   Future<void> _verifyOtp() async {
     final code = _otpCtrl.text.trim();
-    if (code.length != 6 || _verificationId == null) return;
+    if (code.length != 6) return;
     final svc = ref.read(authServiceProvider);
     if (svc == null) {
       setState(() => _error = 'Firebase not configured.');
@@ -150,11 +154,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     }
     setState(() => _stage = _Stage.verifying);
     try {
-      final cred = await svc.signInWithSmsCode(
-        verificationId: _verificationId!,
-        smsCode: code,
+      final cred = await svc.signInWithPhoneOtp(
+        phoneE164: _phoneE164,
+        code: code,
       );
-      await _bootstrapIfNew(cred);
+      await _bootstrapIfNew(cred, phoneOverride: _phoneE164);
       setState(() => _stage = _Stage.done);
       // Router redirect handles navigation (to set-name or home).
     } catch (e) {

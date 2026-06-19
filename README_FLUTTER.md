@@ -30,7 +30,9 @@ flutter run -d <android-device>
 
 ### What's wired up
 
-- Phone-OTP sign-in via `AuthService.verifyPhone` / `signInWithSmsCode`.
+- Phone-OTP sign-in via `AuthService.sendPhoneOtp` / `signInWithPhoneOtp`,
+  backed by the `sendOtp` / `verifyOtp` Cloud Functions (MSG91 SMS + Firebase
+  custom token). Email/Password and Google sign-in use Firebase Auth directly.
 - First sign-in calls `FirestoreService.bootstrapNewUser` which creates
   `users/{uid}` with zero rooms — brand-new accounts start blank and create
   or join a room explicitly from Home.

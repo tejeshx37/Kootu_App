@@ -1,1 +1,32 @@
-{"firestore":{"rules":"firestore.rules","indexes":"firestore.indexes.json"},"flutter":{"platforms":{"android":{"default":{"projectId":"kootuapp","appId":"1:1031395777844:android:87e778fd7ef041a6ced961","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"kootuapp","configurations":{"android":"1:1031395777844:android:87e778fd7ef041a6ced961"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": ["node_modules", ".git", "firebase-debug.log", "*.local"]
+    }
+  ],
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "kootuapp",
+          "appId": "1:1031395777844:android:87e778fd7ef041a6ced961",
+          "fileOutput": "android/app/google-services.json"
+        },
+        "dart": {
+          "lib/firebase_options.dart": {
+            "projectId": "kootuapp",
+            "configurations": {
+              "android": "1:1031395777844:android:87e778fd7ef041a6ced961"
+            }
+          }
+        }
+      }
+    }
+  }
+}

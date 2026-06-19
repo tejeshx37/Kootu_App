@@ -1,41 +1,39 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
-  AuthService(this._auth);
+  AuthService(this._auth, this._functions);
   final FirebaseAuth _auth;
+  final FirebaseFunctions _functions;
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
 
-  /// Begins phone-OTP verification. The verificationId is returned via the
-  /// codeSent callback so the OTP screen can submit the code.
-  Future<void> verifyPhone({
-    required String phoneE164,
-    required void Function(String verificationId, int? resendToken) codeSent,
-    required void Function(FirebaseAuthException error) onError,
-    void Function(PhoneAuthCredential credential)? onAutoVerify,
-    Duration timeout = const Duration(seconds: 60),
-  }) async {
-    await _auth.verifyPhoneNumber(
-      phoneNumber: phoneE164,
-      timeout: timeout,
-      verificationCompleted: onAutoVerify ?? (_) {},
-      verificationFailed: onError,
-      codeSent: codeSent,
-      codeAutoRetrievalTimeout: (_) {},
-    );
+  // ---- Phone OTP (custom backend over MSG91) ----
+  // Phone auth no longer uses Firebase's Play-Integrity-gated client flow.
+  // Instead a Cloud Function generates + SMSes the code (via MSG91); a second
+  // function verifies it and returns a Firebase custom token we sign in with.
+  // This works on any build (incl. unpublished debug) with no reCAPTCHA.
+
+  /// Asks the backend to text a 6-digit code to [phoneE164] (E.164, e.g.
+  /// +919042512878). Throws [FirebaseFunctionsException] with a friendly
+  /// message on failure (rate limit, send error, bad number).
+  Future<void> sendPhoneOtp(String phoneE164) async {
+    await _functions.httpsCallable('sendOtp').call({'phone': phoneE164});
   }
 
-  Future<UserCredential> signInWithSmsCode({
-    required String verificationId,
-    required String smsCode,
-  }) {
-    final cred = PhoneAuthProvider.credential(
-      verificationId: verificationId,
-      smsCode: smsCode,
-    );
-    return _auth.signInWithCredential(cred);
+  /// Verifies [code] for [phoneE164]; on success exchanges the returned custom
+  /// token for a real Firebase session.
+  Future<UserCredential> signInWithPhoneOtp({
+    required String phoneE164,
+    required String code,
+  }) async {
+    final res = await _functions
+        .httpsCallable('verifyOtp')
+        .call({'phone': phoneE164, 'code': code});
+    final token = (res.data as Map)['token'] as String;
+    return _auth.signInWithCustomToken(token);
   }
 
   // Email / password
