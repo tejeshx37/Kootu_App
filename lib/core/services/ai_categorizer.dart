@@ -23,8 +23,12 @@ class AiCategorizer {
 
   final http.Client _client;
   final String _apiKey;
+  // Session cache so the same unknown word never costs two API calls.
+  final Map<String, String> _cache = {};
 
-  static const _model = 'gemini-2.0-flash';
+  // flash-lite has a higher free-tier quota than flash, which matters since
+  // categorization is best-effort and we only call it for unknown items.
+  static const _model = 'gemini-2.0-flash-lite';
   static const _timeout = Duration(seconds: 6);
 
   bool get isConfigured => _apiKey.isNotEmpty;
@@ -37,6 +41,14 @@ class AiCategorizer {
       debugPrint('[Gemini] no key — keyword fallback "$itemName" → $fallback');
       return fallback;
     }
+    // Only spend an API call when the offline matcher couldn't place the item.
+    // The keyword list (incl. Tanglish) handles the common case, keeping us
+    // well within the free Gemini quota.
+    if (fallback != 'other') return fallback;
+
+    final cacheKey = itemName.trim().toLowerCase();
+    final cached = _cache[cacheKey];
+    if (cached != null) return cached;
 
     try {
       final ids = Categories.all.map((c) => c.id).join(', ');
@@ -93,6 +105,7 @@ class AiCategorizer {
         if (guess == c.id ||
             guess.contains(c.id) ||
             guess.contains(c.label.toLowerCase())) {
+          _cache[cacheKey] = c.id;
           return c.id;
         }
       }
