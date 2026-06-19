@@ -36,8 +36,12 @@ class AiCategorizer {
       );
       final prompt =
           'You categorize Indian grocery/household shopping list items. '
-          'Reply with EXACTLY ONE category id from this list and nothing else: '
-          '$ids. Item: "$itemName"';
+          'Item names may be in English, Hindi, Tamil, Telugu, Kannada or '
+          'transliterated/Tanglish (e.g. "vengayam"=onion=>vegetables, '
+          '"paruppu"=dal=>grains_dal, "thayir"=curd=>dairy, "meen"=fish=>'
+          'meat_fish, "manjal"=turmeric=>spices). Reply with EXACTLY ONE '
+          'category id from this list and nothing else: $ids. '
+          'Item: "$itemName"';
 
       final resp = await _client
           .post(
@@ -66,9 +70,18 @@ class AiCategorizer {
       if (text == null) return fallback;
 
       final guess = text.trim().toLowerCase();
-      // Accept only an exact known id; otherwise keep the keyword fallback.
-      final match = Categories.all.where((c) => guess.contains(c.id));
-      return match.isNotEmpty ? match.first.id : fallback;
+      // Match by exact id, id contained, or the human label — so replies like
+      // "vegetables", "grains_dal", or "Grains & Dal" all resolve. Non-'other'
+      // categories are checked first so a stray word doesn't fall to 'other'.
+      for (final c in Categories.all) {
+        if (c.id == 'other') continue;
+        if (guess == c.id ||
+            guess.contains(c.id) ||
+            guess.contains(c.label.toLowerCase())) {
+          return c.id;
+        }
+      }
+      return guess.contains('other') ? 'other' : fallback;
     } on TimeoutException {
       return fallback;
     } catch (_) {

@@ -91,34 +91,75 @@ class Categories {
   static ItemCategory byId(String id) =>
       all.firstWhere((c) => c.id == id, orElse: () => all.last);
 
-  /// Ported from HomeScreen.tsx KEYWORDS map. Substring match, case-insensitive.
+  /// Ported from HomeScreen.tsx KEYWORDS map, extended with common Tamil/Hindi
+  /// transliterations (Tanglish) since the app is for Indian families. Substring
+  /// match, case-insensitive. Keep terms 4+ chars to avoid false substrings.
   static const Map<String, List<String>> _keywords = {
     'vegetables': [
       'tomato', 'onion', 'potato', 'carrot', 'brinjal', 'spinach',
       'beans', 'peas', 'cabbage', 'cauliflower', 'bitter', 'ladyfinger',
+      'okra', 'drumstick', 'cucumber', 'pumpkin', 'ginger', 'garlic',
+      // Tamil
+      'vengayam', 'thakkali', 'urulai', 'kizhangu', 'keerai', 'vendakkai',
+      'kathirikai', 'murungakkai', 'muttaikose', 'avarakkai', 'kovakkai',
+      'pudalangai', 'chow chow', 'vellarikai', 'poondu', 'inji',
+      // Hindi
+      'pyaaz', 'pyaz', 'aloo', 'tamatar', 'gobi', 'bhindi', 'baingan',
+      'palak', 'gajar', 'matar', 'adrak', 'lehsun', 'lahsun',
     ],
     'grains_dal': [
       'rice', 'dal', 'atta', 'wheat', 'maida', 'ragi', 'poha', 'oats',
+      'flour', 'rava', 'sooji', 'semiya', 'vermicelli',
+      // Tamil
+      'arisi', 'paruppu', 'godhumai', 'kadalai', 'ulundu', 'thuvaram',
+      'pasi paruppu', 'kambu', 'cholam',
+      // Hindi
+      'chawal', 'gehu', 'moong', 'urad', 'chana', 'rajma', 'toor', 'masoor',
+      'besan', 'sabudana',
     ],
     'dairy': [
       'milk', 'curd', 'butter', 'ghee', 'paneer', 'cheese', 'lassi', 'cream',
+      'yogurt', 'khoa',
+      // Tamil
+      'paal', 'thayir', 'vennai', 'mor',
+      // Hindi
+      'doodh', 'dahi', 'makhan', 'malai',
     ],
     'meat_fish': [
       'fish', 'chicken', 'mutton', 'egg', 'prawn', 'meat',
+      // Tamil
+      'meen', 'kozhi', 'aatu', 'muttai', 'iraal', 'naatu kozhi',
+      // Hindi
+      'machli', 'murgi', 'anda', 'gosht',
     ],
     'spices': [
-      'salt', 'pepper', 'turmeric', 'chilli', 'masala', 'cumin',
-      'coriander', 'garam', 'cardamom',
+      'salt', 'pepper', 'turmeric', 'chilli', 'chili', 'masala', 'cumin',
+      'coriander', 'garam', 'cardamom', 'mustard', 'fenugreek', 'asafoetida',
+      'tamarind', 'clove', 'cinnamon',
+      // Tamil
+      'uppu', 'milagu', 'manjal', 'milagai', 'jeeragam', 'kothamalli',
+      'kadugu', 'perungayam', 'puli', 'vendhayam', 'elakkai',
+      // Hindi
+      'namak', 'haldi', 'mirch', 'jeera', 'dhania', 'elaichi', 'hing',
+      'imli', 'laung', 'dalchini', 'methi',
     ],
     'snacks': [
       'biscuit', 'chips', 'chocolate', 'namkeen', 'murukku',
-      'mixture', 'candy',
+      'mixture', 'candy', 'cookies', 'wafer',
+      // Tamil / Hindi
+      'thattai', 'seedai', 'bajji', 'bonda', 'sev', 'kurkure', 'mathri',
     ],
     'household': [
       'soap', 'detergent', 'broom', 'mop', 'phenyl', 'floor', 'dish', 'trash',
+      'cleaner', 'liquid', 'tissue', 'matchbox', 'candle', 'foil',
+      // Tamil / Hindi
+      'sabun', 'soappodi', 'jhadu',
     ],
     'personal_care': [
-      'shampoo', 'toothpaste', 'lotion', 'deo', 'razor', 'sanitizer',
+      'shampoo', 'toothpaste', 'lotion', 'deodorant', 'razor', 'sanitizer',
+      'toothbrush', 'handwash', 'facewash', 'conditioner', 'comb',
+      // Tamil / Hindi
+      'pal podi', 'kanga',
     ],
   };
 
