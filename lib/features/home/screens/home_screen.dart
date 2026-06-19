@@ -21,10 +21,18 @@ class HomeScreen extends ConsumerWidget {
     return 'Good evening';
   }
 
+  String _firstName(String? full) {
+    final trimmed = (full ?? '').trim();
+    if (trimmed.isEmpty) return 'there';
+    return trimmed.split(RegExp(r'\s+')).first;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final roomId = ref.watch(selectedRoomIdProvider);
     final itemsAsync = ref.watch(itemsProvider(roomId));
+    final me = ref.watch(currentUserProvider).asData?.value;
+    final firstName = _firstName(me?.name);
 
     return Scaffold(
       // Paper backdrop sits behind everything so the whole page reads as a
@@ -45,7 +53,7 @@ class HomeScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${_greeting()}, Priya 👋',
+                          '${_greeting()}, $firstName 👋',
                           style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.lightTextSecondary,
@@ -91,10 +99,23 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   GestureDetector(
                     onTap: () => context.push('/profile'),
-                    child: const CircleAvatar(
+                    child: CircleAvatar(
                       radius: 18,
                       backgroundColor: AppColors.primarySoft,
-                      child: Text('👩'),
+                      backgroundImage: (me?.photoUrl ?? '').isNotEmpty
+                          ? NetworkImage(me!.photoUrl!)
+                          : null,
+                      child: (me?.photoUrl ?? '').isNotEmpty
+                          ? null
+                          : Text(
+                              firstName.isEmpty
+                                  ? '👤'
+                                  : firstName[0].toUpperCase(),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -113,7 +134,7 @@ class HomeScreen extends ConsumerWidget {
               child: itemsAsync.when(
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Failed to load: $e')),
+                error: (e, _) => _ItemsError(error: e),
                 data: (items) {
                   final pending = items.where((i) => !i.bought).toList();
                   final bought = items.where((i) => i.bought).toList();
@@ -176,5 +197,44 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
+/// Friendly fallback when the items stream fails. The common cause in
+/// development is App Check enforcement on Firestore without a registered
+/// debug token — we hint at it without dumping the raw SDK string.
+class _ItemsError extends StatelessWidget {
+  const _ItemsError({required this.error});
+  final Object error;
+
+  @override
+  Widget build(BuildContext context) {
+    final msg = error.toString();
+    final isPermission = msg.contains('permission-denied');
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Icon(Icons.cloud_off_rounded,
+              size: 48, color: AppColors.lightTextSecondary),
+          const SizedBox(height: 12),
+          Text(
+            isPermission
+                ? "We couldn't access this list right now."
+                : "Couldn't load your list.",
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Check your connection and try again.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 12, color: AppColors.lightTextSecondary),
+          ),
+        ],
+      ),
+    );
+  }
 }

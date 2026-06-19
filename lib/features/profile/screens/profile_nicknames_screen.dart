@@ -1,25 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/data_providers.dart';
 import '../../../core/theme/app_colors.dart';
 
-class ProfileNicknamesScreen extends StatefulWidget {
+class ProfileNicknamesScreen extends ConsumerStatefulWidget {
   const ProfileNicknamesScreen({super.key});
   @override
-  State<ProfileNicknamesScreen> createState() =>
+  ConsumerState<ProfileNicknamesScreen> createState() =>
       _ProfileNicknamesScreenState();
 }
 
-class _ProfileNicknamesScreenState extends State<ProfileNicknamesScreen> {
-  final _contacts = const [
-    ('Priya Subramaniam', '+91 98765 12345', '👩'),
-    ('Rajan Subramaniam', '+91 98765 12346', '👨'),
-    ('Kavya Subramaniam', '+91 98765 12347', '👧'),
-    ('Anand Kumar', '+91 98765 12348', '👦'),
-    ('Meena Kumar', '+91 98765 12349', '👩‍🦰'),
-  ];
-
-  final Map<String, String> _nicknames = {};
-  String? _editing;
+class _ProfileNicknamesScreenState
+    extends ConsumerState<ProfileNicknamesScreen> {
+  String? _editing; // contact uid currently being edited
   final _ctrl = TextEditingController();
 
   @override
@@ -28,79 +23,127 @@ class _ProfileNicknamesScreenState extends State<ProfileNicknamesScreen> {
     super.dispose();
   }
 
+  Future<void> _save(String contactUid) async {
+    final value = _ctrl.text.trim();
+    final uid = ref.read(authStateProvider).asData?.value?.uid;
+    setState(() => _editing = null);
+    if (uid == null) return;
+    try {
+      await ref.read(firestoreServiceProvider).setNickname(
+            uid: uid,
+            contactUid: contactUid,
+            nickname: value,
+          );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save nickname: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final contacts = ref.watch(contactsProvider);
+    final nicknames =
+        ref.watch(currentUserProvider).asData?.value?.nicknames ?? const {};
+
     return Scaffold(
       appBar: AppBar(title: const Text('Contact Nicknames')),
-      body: ListView(
-        children: [
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primarySoft,
-              borderRadius: BorderRadius.circular(AppRadii.md),
-            ),
-            child: const Text(
-              'Nicknames are private to you and shown in your shopping rooms.',
-              style: TextStyle(fontSize: 12),
-            ),
-          ),
-          for (final (name, phone, emoji) in _contacts)
-            ListTile(
-              leading: CircleAvatar(child: Text(emoji)),
-              title: _editing == name
-                  ? TextField(
-                      controller: _ctrl,
-                      autofocus: true,
-                      onSubmitted: (_) => _save(name),
-                      decoration: const InputDecoration(
-                        hintText: 'Nickname',
-                      ),
-                    )
-                  : Text(_nicknames[name] == null
-                      ? name
-                      : '${_nicknames[name]} ($name)'),
-              subtitle: Text(phone),
-              trailing: _editing == name
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => setState(() => _editing = null),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.check,
-                              color: AppColors.primary),
-                          onPressed: () => _save(name),
-                        ),
-                      ],
-                    )
-                  : IconButton(
-                      icon: const Icon(Icons.edit_outlined),
-                      onPressed: () {
-                        setState(() {
-                          _editing = name;
-                          _ctrl.text = _nicknames[name] ?? '';
-                        });
-                      },
+      body: contacts.isEmpty
+          ? _empty()
+          : ListView(
+              children: [
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                  ),
+                  child: const Text(
+                    'Nicknames are private to you and shown in your shopping '
+                    'rooms.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+                for (final c in contacts)
+                  ListTile(
+                    leading: CircleAvatar(child: Text(c.avatar)),
+                    title: _editing == c.uid
+                        ? TextField(
+                            controller: _ctrl,
+                            autofocus: true,
+                            onSubmitted: (_) => _save(c.uid),
+                            decoration: const InputDecoration(
+                              hintText: 'Nickname',
+                            ),
+                          )
+                        : Text(nicknames[c.uid] == null
+                            ? c.name
+                            : '${nicknames[c.uid]} (${c.name})'),
+                    subtitle: Text(
+                      c.roomNames.isEmpty
+                          ? 'Shared room'
+                          : c.roomNames.toSet().join(' · '),
                     ),
+                    trailing: _editing == c.uid
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () =>
+                                    setState(() => _editing = null),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.check,
+                                    color: AppColors.primary),
+                                onPressed: () => _save(c.uid),
+                              ),
+                            ],
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: () {
+                              setState(() {
+                                _editing = c.uid;
+                                _ctrl.text = nicknames[c.uid] ?? '';
+                              });
+                            },
+                          ),
+                  ),
+              ],
             ),
-        ],
-      ),
     );
   }
 
-  void _save(String name) {
-    setState(() {
-      final v = _ctrl.text.trim();
-      if (v.isEmpty) {
-        _nicknames.remove(name);
-      } else {
-        _nicknames[name] = v;
-      }
-      _editing = null;
-    });
+  Widget _empty() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.group_outlined,
+                size: 56, color: AppColors.lightTextSecondary),
+            SizedBox(height: 16),
+            Text(
+              'No contacts yet',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'People you share a room with appear here, so you can give them '
+              'private nicknames.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 13, color: AppColors.lightTextSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

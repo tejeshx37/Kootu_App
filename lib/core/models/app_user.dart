@@ -10,6 +10,9 @@ class AppUser {
   final String city;
   final DateTime memberSince;
   final List<String> activeRoomIds;
+  /// Private contact nicknames (other member's uid → nickname), only ever
+  /// read/written by this user.
+  final Map<String, String> nicknames;
 
   const AppUser({
     required this.id,
@@ -21,6 +24,7 @@ class AppUser {
     required this.city,
     required this.memberSince,
     required this.activeRoomIds,
+    this.nicknames = const {},
   });
 
   factory AppUser.fromMap(String id, Map<String, dynamic> data) => AppUser(
@@ -35,6 +39,8 @@ class AppUser {
             DateTime.now(),
         activeRoomIds:
             List<String>.from((data['activeRoomIds'] ?? const []) as List),
+        nicknames: Map<String, String>.from(
+            (data['nicknames'] ?? const <String, String>{}) as Map),
       );
 
   Map<String, dynamic> toMap() => {
@@ -46,5 +52,6 @@ class AppUser {
         'city': city,
         'memberSince': Timestamp.fromDate(memberSince),
         'activeRoomIds': activeRoomIds,
+        'nicknames': nicknames,
       };
 }

@@ -2,23 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 
+/// Two-tab notifications screen. Real items will appear here once we wire FCM
+/// + a `notifications/{uid}/items` collection; until then both tabs render
+/// empty states so the screen ships with no fake data.
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
-
-  static const _offers = [
-    ('Near FreshMart!', '3 items on your list are on offer', '2m ago', true),
-    ('Aavin Booth deal', 'Flat ₹15 off Milk (2L)', '1h ago', false),
-    ('Garam Masala 20% off', 'At Saravana Spices', '4h ago', false),
-    ('BOGO chips', 'At KK Snacks Mart', 'Yesterday', false),
-  ];
-
-  static const _activity = [
-    ('Mom marked Milk as Bought ✓', 'Family Room', '5m ago', true),
-    ('Priya added Basmati Rice', 'Family Room', '1h ago', false),
-    ('Rajan joined Weekend BBQ', 'Weekend BBQ', '3h ago', false),
-    ('Meena claimed Curd', 'Work Lunch', 'Yesterday', false),
-    ('Kavya updated budget', 'Family Room', '2 days ago', false),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -36,54 +24,59 @@ class NotificationsScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: TabBarView(
+        body: const TabBarView(
           children: [
-            _list(context, _offers),
-            _list(context, _activity),
+            _Empty(
+              icon: Icons.local_offer_outlined,
+              title: 'No offers yet',
+              body:
+                  "We'll alert you when a nearby merchant has a deal on something in your list.",
+            ),
+            _Empty(
+              icon: Icons.notifications_none_rounded,
+              title: 'No room activity yet',
+              body:
+                  'Updates from people in your shared rooms — items added, bought, or marked claimed — will appear here.',
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _list(BuildContext context,
-      List<(String, String, String, bool)> data) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: data.length,
-      itemBuilder: (ctx, i) {
-        final (title, body, time, unread) = data[i];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(AppRadii.md),
-            border: Border(
-              left: BorderSide(
-                color: unread ? AppColors.primary : Colors.transparent,
-                width: 3,
-              ),
-              top: BorderSide(
-                  color: Theme.of(context).colorScheme.outline),
-              right: BorderSide(
-                  color: Theme.of(context).colorScheme.outline),
-              bottom: BorderSide(
-                  color: Theme.of(context).colorScheme.outline),
+class _Empty extends StatelessWidget {
+  const _Empty({required this.icon, required this.title, required this.body});
+  final IconData icon;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 56, color: AppColors.lightTextSecondary),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
-          ),
-          child: ListTile(
-            title: Text(title,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w700)),
-            subtitle: Text(body),
-            trailing: Text(time,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.lightTextSecondary,
-                )),
-          ),
-        );
-      },
+            const SizedBox(height: 6),
+            Text(
+              body,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.lightTextSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
