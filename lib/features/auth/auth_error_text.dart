@@ -1,8 +1,15 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 /// Maps Firebase auth error codes to friendly, user-facing messages so we never
 /// surface raw SDK strings.
 String authErrorText(Object error) {
+  // Phone OTP errors come from our Cloud Functions as FirebaseFunctionsException.
+  // Their `message` is already a friendly HttpsError string we set server-side.
+  if (error is FirebaseFunctionsException) {
+    final msg = error.message ?? '';
+    return msg.isEmpty ? 'Something went wrong. Please try again.' : msg;
+  }
   if (error is FirebaseAuthException) {
     switch (error.code) {
       case 'invalid-phone-number':

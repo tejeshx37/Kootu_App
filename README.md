@@ -43,7 +43,8 @@ become a deal at the shop down the road.
 - 📓 **Notebook UI** — the home list is styled as a ruled notebook page, so adding
   items feels like writing your shopping list by hand.
 - 🌗 **Dark mode** — full light/dark theming, persisted across launches.
-- 📱 **Phone-OTP auth** — passwordless sign-in with Firebase Phone Authentication.
+- 📱 **Phone-OTP auth** — passwordless sign-in via a custom OTP backend (MSG91
+  SMS + a Firebase custom token), plus Email/Password and Google sign-in.
 
 ## Tech stack
 
@@ -93,48 +94,58 @@ Password** and **Google** sign-in providers.
 > ℹ️ Firebase Phone Auth requires `minSdkVersion 23` — already set in
 > `android/app/build.gradle.kts`.
 
-#### Production auth setup (required for Phone OTP & Google)
+#### Phone OTP backend (MSG91 + Cloud Functions)
 
-Phone OTP and Google sign-in use Google's **Play Integrity / Android Device
-Verification**. This **cannot be satisfied from app code** — it requires the
-Firebase Console steps below **and a real physical device with Google Play**.
-On emulators Play Integrity often returns *17028 Invalid app info in
-play_integrity_token* and Firebase falls back to a reCAPTCHA web page (itself
-unreliable in partitioned-storage Custom Tabs — *"Unable to process request due
-to missing initial state"*). **Use a test phone number on the emulator (step 4)
-and a real device for true attestation.**
+Phone OTP does **not** use Firebase's client-side phone auth (that relies on
+Play Integrity, which rejects unpublished/sideloaded builds with *"app not
+Recognized by Play Store"* and falls back to a flaky reCAPTCHA web page).
+Instead Kootu owns the OTP via two Cloud Functions in [`functions/`](functions/):
 
-1. **Register signing fingerprints.** Get them with:
+- `sendOtp(phone)` — generates a 6-digit code, stores a salted HMAC in
+  `otps/{phone}` (TTL + attempt limit), and sends the SMS through **MSG91**.
+- `verifyOtp(phone, code)` — checks the code and returns a Firebase **custom
+  token**; the app calls `signInWithCustomToken`, so all Firestore rules and
+  user docs keyed on `request.auth.uid` keep working unchanged.
+
+This works on **any build (incl. debug)** with no Play Integrity and no browser.
+
+**Setup:**
+
+1. **Install & pick a region.** The client calls functions in `us-central1`
+   (see `FirebaseFunctions.instance`); the functions declare the same region.
    ```bash
-   cd android && ./gradlew signingReport
+   cd functions && npm install
    ```
-   Copy **both** the **SHA-1** and **SHA-256** for the `debug` variant (and later
-   your `release` keystore) → Firebase Console → *Project settings* → the
-   `com.kootu.kootu` Android app → **Add fingerprint**. Then **re-download
-   `google-services.json`** into `android/app/`. Both SHAs are required — a
-   missing SHA-256 is the usual cause of *Invalid app info*.
 
-   > Confirm the file matches the Dart config — both must agree:
-   > ```bash
-   > grep project_number android/app/google-services.json   # 1031395777844
-   > ```
-   > It must equal `messagingSenderId` in `lib/firebase_options.dart`.
+2. **MSG91 (India SMS gateway).** Create an MSG91 account, complete **DLT**
+   registration, and create an **OTP flow/template**. Note your **authkey**,
+   **sender id** (6 chars, e.g. `KOOTUA`) and **template id**. Set the sender +
+   template at the top of `functions/index.js` (or via `MSG91_SENDER` /
+   `MSG91_TEMPLATE_ID` env), and store secrets (never commit them):
+   ```bash
+   firebase functions:secrets:set MSG91_AUTHKEY   # paste your MSG91 authkey
+   firebase functions:secrets:set OTP_PEPPER      # any long random string
+   ```
 
-2. **App Check (Play Integrity).** The app already calls
-   `FirebaseAppCheck.instance.activate(...)` in `lib/main.dart` (debug provider
-   in debug builds, Play Integrity in release). Finish the setup:
-   - Enable the **Play Integrity API** in Google Cloud for project `kootuapp`.
-   - Firebase Console → **App Check** → register the Android app with the
-     **Play Integrity** provider.
-   - For emulators/debug builds, run the app once and copy the printed token:
-     `DebugAppCheckProvider: Enter this debug secret … <UUID>` → add it under
-     *App Check → app → Manage debug tokens*. Otherwise you'll see
-     `App attestation failed (403)`.
-   - Keep App Check in **monitoring (unenforced)** mode until the Metrics tab
-     shows verified requests, then enable **enforcement** for Authentication to
-     avoid locking yourself out.
+3. **Deploy.**
+   ```bash
+   firebase deploy --only functions,firestore:rules
+   ```
+   The `otps/{phone}` collection is denied to all clients in
+   `firestore.rules` — only the Admin SDK (these functions) touches it.
 
-3. **Release signing.** `android/app/build.gradle.kts` reads an optional
+4. **Swap provider (optional).** To use Twilio/Gupshup instead of MSG91,
+   replace the single `fetch(...)` block in `sendOtp` — the OTP generation,
+   storage, verification and token minting stay identical.
+
+> Email/Password and Google sign-in still use Firebase Auth directly and need
+> no SMS/attestation setup. If you enable **App Check enforcement** for
+> Authentication, register your debug token first (logcat → *Enter this debug
+> secret*) or those two methods will fail with `App Check token is invalid`.
+
+#### Release signing
+
+1. **Release signing.** `android/app/build.gradle.kts` reads an optional
    `android/key.properties` (gitignored) and signs release builds with your
    keystore when present, falling back to debug signing otherwise. Create one:
    ```bash
@@ -148,15 +159,11 @@ and a real device for true attestation.**
    keyAlias=kootu
    keyPassword=••••••
    ```
-   Register the release keystore's SHA-1/256 in Firebase too (step 1).
+   Register the release keystore's SHA-1/256 in Firebase too (for Google
+   sign-in, which still uses Firebase Auth directly).
 
-4. **Unblock dev testing now.** Firebase Console → Authentication → Sign-in
-   method → **Phone** → add a **test number** (e.g. `+91 9042512878` →
-   `123456`). Test numbers skip SMS + integrity entirely, so you can exercise
-   the whole flow while the above propagates.
-
-> 🔒 Never commit `google-services.json`, `key.properties`, or `*.jks` — they
-> are already gitignored.
+> 🔒 Never commit `google-services.json`, `key.properties`, `*.jks`, or the
+> MSG91/OTP secrets — they are gitignored or stored as Functions secrets.
 
 #### Optional: AI item categorization (Gemini)
 

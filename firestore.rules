@@ -67,5 +67,12 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if false;
     }
+
+    // Phone-OTP material. Written and read ONLY by Cloud Functions via the
+    // Admin SDK (which bypasses these rules). All client access is denied so a
+    // signed-out caller can never read a code hash or tamper with attempts.
+    match /otps/{phone} {
+      allow read, write: if false;
+    }
   }
 }
