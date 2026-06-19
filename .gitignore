@@ -17,6 +17,9 @@
 *.iws
 .idea/
 .vscode/
+# Local secrets — Gemini key etc. consumed via --dart-define-from-file.
+# Use dart_defines.example.json as the template; never commit the real file.
+dart_defines.json
 captures/
 .externalNativeBuild/
 .cxx/
