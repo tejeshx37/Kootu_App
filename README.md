@@ -177,11 +177,22 @@ This works on **any build (incl. debug)** with no Play Integrity and no browser.
 #### Optional: AI item categorization (Gemini)
 
 New list items are auto-categorized. Without a key the app uses a built-in
-keyword matcher; provide a Gemini API key to upgrade to AI categorization:
+keyword matcher; provide a [Gemini API key](https://aistudio.google.com/app/apikey)
+to upgrade to AI categorization.
+
+Persist the key locally so you don't retype it every run:
 
 ```bash
-flutter run --dart-define=GEMINI_API_KEY=your_key_here
+cp dart_defines.example.json dart_defines.json   # one-time
+# edit dart_defines.json and paste your real key
+flutter run --dart-define-from-file=dart_defines.json
 ```
+
+`dart_defines.json` is gitignored — your key never leaves your machine.
+The committed `dart_defines.example.json` only shows the file shape.
+
+> 🔒 If you ever accidentally paste a real key into chat, a screenshot, or a
+> commit, **revoke it immediately** at the link above and generate a fresh one.
 
 ### 3. Deploy Firestore rules & indexes
 
