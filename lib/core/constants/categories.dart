@@ -103,6 +103,8 @@ class Categories {
       'vengayam', 'thakkali', 'urulai', 'kizhangu', 'keerai', 'vendakkai',
       'kathirikai', 'murungakkai', 'muttaikose', 'avarakkai', 'kovakkai',
       'pudalangai', 'chow chow', 'vellarikai', 'poondu', 'inji',
+      'karuveppilai', 'curry leaves', 'kothamalli', 'pudina', 'mint',
+      'coriander leaves', 'vazhaikkai', 'seppankizhangu', 'mullangi',
       // Hindi
       'pyaaz', 'pyaz', 'aloo', 'tamatar', 'gobi', 'bhindi', 'baingan',
       'palak', 'gajar', 'matar', 'adrak', 'lehsun', 'lahsun',
@@ -137,7 +139,7 @@ class Categories {
       'coriander', 'garam', 'cardamom', 'mustard', 'fenugreek', 'asafoetida',
       'tamarind', 'clove', 'cinnamon',
       // Tamil
-      'uppu', 'milagu', 'manjal', 'milagai', 'jeeragam', 'kothamalli',
+      'uppu', 'milagu', 'manjal', 'milagai', 'jeeragam',
       'kadugu', 'perungayam', 'puli', 'vendhayam', 'elakkai',
       // Hindi
       'namak', 'haldi', 'mirch', 'jeera', 'dhania', 'elaichi', 'hing',
