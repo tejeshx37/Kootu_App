@@ -32,6 +32,7 @@ class _JoinRoomScreenState extends ConsumerState<JoinRoomScreen> {
     }
     final uid = ref.read(authStateProvider).asData?.value?.uid;
     if (uid == null) return;
+    final me = ref.read(currentUserProvider).asData?.value;
 
     setState(() {
       _joining = true;
@@ -40,7 +41,7 @@ class _JoinRoomScreenState extends ConsumerState<JoinRoomScreen> {
     try {
       final room = await ref
           .read(firestoreServiceProvider)
-          .joinRoomByInviteCode(code, uid);
+          .joinRoomByInviteCode(code, uid, name: me?.name ?? '');
       if (!mounted) return;
       if (room == null) {
         setState(() {

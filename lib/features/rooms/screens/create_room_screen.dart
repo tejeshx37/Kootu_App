@@ -38,15 +38,19 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     }
     final uid = ref.read(authStateProvider).asData?.value?.uid;
     if (uid == null) return;
+    final me = ref.read(currentUserProvider).asData?.value;
 
     setState(() {
       _saving = true;
       _error = null;
     });
     try {
-      final room = await ref
-          .read(firestoreServiceProvider)
-          .createRoom(uid: uid, name: name, emoji: _emoji);
+      final room = await ref.read(firestoreServiceProvider).createRoom(
+            uid: uid,
+            name: name,
+            emoji: _emoji,
+            creatorName: me?.name ?? '',
+          );
       if (!mounted) return;
       ref.read(explicitRoomIdProvider.notifier).state = room.id;
       context.go('/home');

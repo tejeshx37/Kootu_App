@@ -121,3 +121,45 @@ final serviceProvidersProvider =
 
 /// "Matched only" filter for OffersScreen.
 final matchedOnlyProvider = StateProvider<bool>((_) => false);
+
+/// A person you share at least one room with — the real source for the
+/// Contact Nicknames screen. Derived live from your rooms' denormalized
+/// `members`, excluding yourself, deduped across rooms.
+class Contact {
+  final String uid;
+  final String name;
+  final String avatar;
+  final List<String> roomNames;
+  const Contact({
+    required this.uid,
+    required this.name,
+    required this.avatar,
+    required this.roomNames,
+  });
+}
+
+final contactsProvider = Provider<List<Contact>>((ref) {
+  final selfUid = ref.watch(authStateProvider).asData?.value?.uid;
+  final rooms = ref.watch(roomsProvider).asData?.value ?? const [];
+
+  final byUid = <String, RoomMember>{};
+  final roomsFor = <String, List<String>>{};
+  for (final room in rooms) {
+    for (final m in room.members.values) {
+      if (m.uid == selfUid || m.uid.isEmpty) continue;
+      byUid[m.uid] = m;
+      roomsFor.putIfAbsent(m.uid, () => []).add(room.name);
+    }
+  }
+
+  final contacts = byUid.values
+      .map((m) => Contact(
+            uid: m.uid,
+            name: m.name.isEmpty ? 'Member' : m.name,
+            avatar: m.avatar,
+            roomNames: roomsFor[m.uid] ?? const [],
+          ))
+      .toList()
+    ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  return contacts;
+});

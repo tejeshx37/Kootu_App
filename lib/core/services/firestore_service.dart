@@ -81,6 +81,20 @@ class FirestoreService {
         );
   }
 
+  /// Sets (or clears, when [nickname] is empty) the private nickname this user
+  /// has given to another member, stored on their own user doc.
+  Future<void> setNickname({
+    required String uid,
+    required String contactUid,
+    required String nickname,
+  }) {
+    final trimmed = nickname.trim();
+    return _db.collection('users').doc(uid).update({
+      'nicknames.$contactUid':
+          trimmed.isEmpty ? FieldValue.delete() : trimmed,
+    });
+  }
+
   // Rooms
   Stream<List<Room>> watchRoomsForUser(String userId) => _db
       .collection('rooms')
@@ -101,17 +115,25 @@ class FirestoreService {
     required String uid,
     required String name,
     required String emoji,
+    String creatorName = '',
+    String creatorAvatar = '👤',
   }) async {
     final roomRef = _db.collection('rooms').doc();
     final now = DateTime.now();
     final inviteCode = await _reserveInviteCode(roomRef.id, uid);
+    final creator = RoomMember(
+      uid: uid,
+      name: creatorName,
+      avatar: creatorAvatar,
+    );
 
     await roomRef.set({
       'name': name,
       'emoji': emoji,
       'createdBy': uid,
       'memberIds': [uid],
-      'memberAvatars': const ['👤'],
+      'memberAvatars': [creatorAvatar],
+      'members': {uid: creator.toMap()},
       'createdAt': Timestamp.fromDate(now),
       'itemCount': 0,
       'neededCount': 0,
@@ -124,7 +146,8 @@ class FirestoreService {
       emoji: emoji,
       createdBy: uid,
       memberIds: [uid],
-      memberAvatars: const ['👤'],
+      memberAvatars: [creatorAvatar],
+      members: {uid: creator},
       createdAt: now,
       inviteCode: inviteCode,
     );
@@ -132,7 +155,12 @@ class FirestoreService {
 
   /// Looks up an invite code, returns the joined Room on success, or `null`
   /// if the code does not exist. Throws if Firestore denies the update.
-  Future<Room?> joinRoomByInviteCode(String code, String uid) async {
+  Future<Room?> joinRoomByInviteCode(
+    String code,
+    String uid, {
+    String name = '',
+    String avatar = '👤',
+  }) async {
     final normalized = code.trim().toUpperCase();
     if (normalized.length != 6) return null;
     final invite = await _db.collection('invites').doc(normalized).get();
@@ -142,6 +170,8 @@ class FirestoreService {
 
     await _db.collection('rooms').doc(roomId).update({
       'memberIds': FieldValue.arrayUnion([uid]),
+      'memberAvatars': FieldValue.arrayUnion([avatar]),
+      'members.$uid': RoomMember(uid: uid, name: name, avatar: avatar).toMap(),
     });
 
     final snap = await _db.collection('rooms').doc(roomId).get();
