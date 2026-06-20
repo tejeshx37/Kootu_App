@@ -1,14 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../models/app_user.dart';
 import '../models/list_item.dart';
+import '../models/merchant.dart';
 import '../models/offer.dart';
 import '../models/room.dart';
 import '../models/service_models.dart';
 import '../services/ai_categorizer.dart';
 import '../services/firestore_service.dart';
+import '../services/location_service.dart';
 import '../services/storage_service.dart';
 import 'auth_provider.dart';
 
@@ -88,6 +91,27 @@ final offersProvider = StreamProvider<List<Offer>>((ref) async* {
   yield* svc.watchActiveOffers();
 });
 
+/// Merchants directory — supplies lat/lng so Explore can rank offers by the
+/// device's GPS distance. Keyed by `Merchant.id` (== offer.merchantId).
+final merchantsProvider = StreamProvider<List<Merchant>>((ref) async* {
+  final user = ref.watch(authStateProvider).asData?.value;
+  if (user == null) {
+    yield const [];
+    return;
+  }
+  yield* ref.watch(firestoreServiceProvider).watchMerchants();
+});
+
+final locationServiceProvider =
+    Provider<LocationService>((ref) => LocationService());
+
+/// Device GPS position, fetched once. Null = permission denied / off — the
+/// Explore screen falls back to the offer's stored distance in that case.
+/// Invalidate to re-fetch (e.g. pull-to-refresh).
+final userLocationProvider = FutureProvider<Position?>((ref) async {
+  return ref.watch(locationServiceProvider).getCurrentPosition();
+});
+
 /// The signed-in user's Firestore profile document, live.
 final currentUserProvider = StreamProvider<AppUser?>((ref) async* {
   final user = ref.watch(authStateProvider).asData?.value;
@@ -118,9 +142,6 @@ final serviceProvidersProvider =
   }
   yield* ref.watch(firestoreServiceProvider).watchServiceProviders();
 });
-
-/// "Matched only" filter for OffersScreen.
-final matchedOnlyProvider = StateProvider<bool>((_) => false);
 
 /// A person you share at least one room with — the real source for the
 /// Contact Nicknames screen. Derived live from your rooms' denormalized

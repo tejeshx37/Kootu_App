@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/app_user.dart';
 import '../models/list_item.dart';
+import '../models/merchant.dart';
 import '../models/offer.dart';
 import '../models/room.dart';
 import '../models/service_models.dart';
@@ -323,6 +324,13 @@ class FirestoreService {
       .where('active', isEqualTo: true)
       .snapshots()
       .map((s) => s.docs.map((d) => Offer.fromMap(d.id, d.data())).toList());
+
+  // Merchants — keyed by merchantId, holds lat/lng for distance computation.
+  Stream<List<Merchant>> watchMerchants() => _db
+      .collection('merchants')
+      .snapshots()
+      .map((s) =>
+          s.docs.map((d) => Merchant.fromMap(d.id, d.data())).toList());
 
   // Services catalogue
   Stream<List<ServiceCategory>> watchServiceCategories() => _db
