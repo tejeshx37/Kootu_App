@@ -252,7 +252,8 @@ src/                      # original React/TSX design prototype (reference)
 
 - **Riverpod providers** in `core/providers/` expose everything screens need —
   `themeModeProvider`, `authStateProvider`, `roomsProvider`,
-  `itemsProvider.family(roomId)`, `offersProvider`, and `matchedOnlyProvider`.
+  `itemsProvider.family(roomId)`, `offersProvider`, `merchantsProvider`, and
+  `userLocationProvider`.
 - **All Firestore access is centralized** in `FirestoreService`; widgets never
   touch `FirebaseFirestore.instance` directly.
 - **GoRouter** (in `app.dart`) uses a stateful navigation shell for the bottom

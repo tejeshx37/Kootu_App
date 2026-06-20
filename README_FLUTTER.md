@@ -69,7 +69,7 @@ lib/
 - `flutter_riverpod` providers in `core/providers/` expose everything
   screens need (`themeModeProvider`, `authStateProvider`,
   `roomsProvider`, `itemsProvider.family(roomId)`,
-  `offersProvider`, `matchedOnlyProvider`).
+  `offersProvider`, `merchantsProvider`, `userLocationProvider`).
 - All Firestore I/O lives in `FirestoreService`. Widgets never touch
   `FirebaseFirestore.instance` directly.
 - When Firestore returns empty (e.g. before backend seeding), providers

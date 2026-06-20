@@ -3,6 +3,9 @@
          only for the Flutter tool). Without it the release APK can't reach
          Firebase Auth / Firestore at all. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Used by Explore to rank offers by GPS distance to the merchant. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="Kootu"
         android:name="${applicationName}"

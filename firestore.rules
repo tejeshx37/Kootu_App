@@ -57,6 +57,13 @@ service cloud.firestore {
       allow write: if false; // merchant write path comes later
     }
 
+    // Merchants directory — supplies lat/lng so the client can rank offers by
+    // GPS distance. Read-only; curated server-side.
+    match /merchants/{merchantId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
     // Read-only service catalogue, curated server-side (Admin SDK / console).
     match /serviceCategories/{categoryId} {
       allow read: if request.auth != null;

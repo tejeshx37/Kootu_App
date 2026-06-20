@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../core/constants/categories.dart';
+import '../../../core/models/merchant.dart';
+import '../../../core/models/offer.dart';
 import '../../../core/providers/data_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -18,15 +21,51 @@ class ExploreScreen extends ConsumerStatefulWidget {
 class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   String _selCat = 'all';
 
+  /// Computes the GPS distance (km) from the user to the merchant behind an
+  /// offer. Returns null when either position is unknown so the card can fall
+  /// back to the offer's stored `distanceKm`.
+  double? _distanceFor(Offer o, Position? pos, Map<String, Merchant> byId) {
+    if (pos == null) return null;
+    final m = byId[o.merchantId];
+    if (m == null) return null;
+    return Geolocator.distanceBetween(pos.latitude, pos.longitude, m.lat, m.lng) /
+        1000.0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final offers = ref.watch(offersProvider).asData?.value ?? const [];
     final providers =
         ref.watch(serviceProvidersProvider).asData?.value ?? const [];
     final locality = ref.watch(currentUserProvider).asData?.value?.locality;
-    final filtered = _selCat == 'all'
+    final userPos = ref.watch(userLocationProvider).asData?.value;
+    final merchants =
+        ref.watch(merchantsProvider).asData?.value ?? const <Merchant>[];
+    final byId = {for (final m in merchants) m.id: m};
+
+    final categoryFiltered = _selCat == 'all'
         ? offers
         : offers.where((o) => o.categoryId == _selCat).toList();
+
+    // Attach GPS-computed distance per offer; sort ascending. Offers with no
+    // merchant record fall back to their stored `distanceKm` for sorting.
+    final ranked = [
+      for (final o in categoryFiltered)
+        (offer: o, distanceKm: _distanceFor(o, userPos, byId)),
+    ]..sort((a, b) {
+        final da = a.distanceKm ?? a.offer.distanceKm;
+        final db = b.distanceKm ?? b.offer.distanceKm;
+        return da.compareTo(db);
+      });
+    final filtered = ranked;
+    final featured = [
+      for (final o in offers)
+        (offer: o, distanceKm: _distanceFor(o, userPos, byId)),
+    ]..sort((a, b) {
+        final da = a.distanceKm ?? a.offer.distanceKm;
+        final db = b.distanceKm ?? b.offer.distanceKm;
+        return da.compareTo(db);
+      });
 
     return DefaultTabController(
       length: 2,
@@ -105,8 +144,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                                   itemBuilder: (ctx, i) => Padding(
                                     padding:
                                         const EdgeInsets.only(bottom: 12),
-                                    child:
-                                        ProductOfferCard(offer: filtered[i]),
+                                    child: ProductOfferCard(
+                                      offer: filtered[i].offer,
+                                      overrideDistanceKm:
+                                          filtered[i].distanceKm,
+                                    ),
                                   ),
                                 ),
                         ),
@@ -148,9 +190,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                               scrollDirection: Axis.horizontal,
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 16),
-                              itemCount: offers.length,
-                              itemBuilder: (ctx, i) =>
-                                  ProductOfferCard(offer: offers[i]),
+                              itemCount: featured.length,
+                              itemBuilder: (ctx, i) => ProductOfferCard(
+                                offer: featured[i].offer,
+                                overrideDistanceKm: featured[i].distanceKm,
+                              ),
                             ),
                           ),
                         ],

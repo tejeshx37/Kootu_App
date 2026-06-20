@@ -50,7 +50,6 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
     final roomId = ref.watch(selectedRoomIdProvider);
     final items = ref.watch(itemsProvider(roomId)).asData?.value ?? const [];
     final offersAsync = ref.watch(offersProvider);
-    final matchedOnly = ref.watch(matchedOnlyProvider);
     final pendingCount = items.where((i) => !i.bought).length;
 
     return Scaffold(
@@ -75,11 +74,11 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
           ];
 
           var filtered = enriched.where((e) {
+            if (e.matched.isEmpty) return false;
             if (_selCat != 'all' && e.offer.categoryId != _selCat) {
               return false;
             }
             if (e.offer.distanceKm > _maxDistance) return false;
-            if (matchedOnly && e.matched.isEmpty) return false;
             return true;
           }).toList();
 
@@ -90,33 +89,19 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
             return a.offer.distanceKm.compareTo(b.offer.distanceKm);
           });
 
-          final matchedCount =
-              filtered.where((e) => e.matched.isNotEmpty).length;
-
           return Column(
             children: [
               Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(16, 8, 8, 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Matching against $pendingCount items in your list',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.lightTextSecondary,
-                        ),
-                      ),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Matching against $pendingCount items in your list',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.lightTextSecondary,
                     ),
-                    const Text('Matched only',
-                        style: TextStyle(fontSize: 12)),
-                    Switch.adaptive(
-                      value: matchedOnly,
-                      onChanged: (v) =>
-                          ref.read(matchedOnlyProvider.notifier).state = v,
-                    ),
-                  ],
+                  ),
                 ),
               ),
               const _GroupLabel('CATEGORY'),
@@ -157,7 +142,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                 child: filtered.isEmpty
                     ? const Center(
                         child: Text(
-                          'No offers match these filters',
+                          'No offers for items in your list yet',
                           style: TextStyle(
                             color: AppColors.lightTextSecondary,
                           ),
@@ -171,7 +156,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 10),
                               child: Text(
-                                '${filtered.length} offers found · $matchedCount matched your list',
+                                '${filtered.length} offers matched your list',
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: AppColors.lightTextSecondary,

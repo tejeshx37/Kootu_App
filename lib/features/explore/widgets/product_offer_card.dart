@@ -5,12 +5,21 @@ import '../../../core/models/offer.dart';
 import '../../../core/theme/app_colors.dart';
 
 class ProductOfferCard extends StatelessWidget {
-  const ProductOfferCard({super.key, required this.offer});
+  const ProductOfferCard({
+    super.key,
+    required this.offer,
+    this.overrideDistanceKm,
+  });
   final Offer offer;
 
-  String _distance() => offer.distanceKm < 1
-      ? '${(offer.distanceKm * 1000).round()} m'
-      : '${offer.distanceKm.toStringAsFixed(1)} km';
+  /// When non-null, displays this instead of the offer's stored distance.
+  /// Explore uses it to show GPS-computed distance to the merchant.
+  final double? overrideDistanceKm;
+
+  String _distance() {
+    final d = overrideDistanceKm ?? offer.distanceKm;
+    return d < 1 ? '${(d * 1000).round()} m' : '${d.toStringAsFixed(1)} km';
+  }
 
   @override
   Widget build(BuildContext context) {
